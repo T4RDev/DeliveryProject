@@ -1,0 +1,19 @@
+/* You can add global styles to this file, and also import other style files */
+
+@import 'tailwindcss';
+@import 'leaflet/dist/leaflet.css';
+
+/* Ensure Leaflet map container has explicit sizing */
+#route-map {
+  width: 100% !important;
+  height: 480px !important;
+  min-height: 480px !important;
+  display: block !important;
+}
+
+#rider-modal-map {
+  width: 100% !important;
+  height: 320px !important;
+  min-height: 320px !important;
+  display: block !important;
+}

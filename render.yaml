@@ -1,0 +1,13 @@
+# Render.com deployment config สำหรับ Backend API
+services:
+  - type: web
+    name: lunchbox-delivery-backend
+    runtime: node
+    rootDir: Back
+    buildCommand: npm install && npm run build
+    startCommand: npm start
+    envVars:
+      - key: NODE_ENV
+        value: production
+      - key: PORT
+        value: 3000

@@ -1,0 +1,17 @@
+# Node modules (ห้าม push)
+node_modules/
+dist/
+.angular/
+
+# Environment
+.env
+*.env.local
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Obsidian Vaults และ zip files (ไม่ต้อง push)
+Angular/
+NodeJS Web API (TS)/
+*.zip
