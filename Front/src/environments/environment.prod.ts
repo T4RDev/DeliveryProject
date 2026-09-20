@@ -2,5 +2,5 @@
 // *** แก้ URL ตรงนี้ให้ตรงกับ URL จาก Render หลัง Deploy แล้ว ***
 export const environment = {
   production: true,
-  apiUrl: 'https://YOUR-BACKEND-NAME.onrender.com/api',
+  apiUrl: 'https://deliveryproject-oil8.onrender.com/api',
 };

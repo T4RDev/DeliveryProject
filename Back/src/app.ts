@@ -11,6 +11,11 @@ app.use(cors({ origin: '*' }));
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
+// Root Redirect to API
+app.get('/', (req: Request, res: Response) => {
+  res.redirect('/api');
+});
+
 // API Info / Health Check
 app.get('/api', (req: Request, res: Response) => {
   res.json({
