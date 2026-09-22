@@ -1,4 +1,5 @@
 {
+  "outputDirectory": "dist/Front/browser",
   "rewrites": [
     { "source": "/(.*)", "destination": "/index.html" }
   ]
