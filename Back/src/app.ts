@@ -24,7 +24,7 @@ app.get('/api', (req: Request, res: Response) => {
     version: '1.0.0',
     depot: {
       location: 'ศูนย์อาหารตลาดน้อย มหาวิทยาลัยมหาสารคาม (มมส. ขามเรียง)',
-      serviceHours: '10:00 - 12:30',
+      serviceHours: '11:30 - 12:30',
     },
     endpoints: {
       customers: {
