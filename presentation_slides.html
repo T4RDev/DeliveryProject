@@ -1,0 +1,745 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>โครงสร้างโปรเจกต์ส่งด่วนมื้อเที่ยง (Frontend & Backend)</title>
+  <!-- Google Font: Sarabun & TH Sarabun New Fallback -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Sarabun:ital,wght@0,300;0,400;0,500;0,600;0,700;1,400&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --font-sarabun: 'TH Sarabun New', 'TH SarabunPSK', 'Sarabun', -apple-system, BlinkMacSystemFont, sans-serif;
+      --primary: #2563eb;
+      --primary-dark: #1d4ed8;
+      --backend-color: #6366f1;
+      --frontend-color: #0d9488;
+      --accent: #f59e0b;
+      --bg-dark: #0f172a;
+      --slide-bg: #ffffff;
+      --text-main: #1e293b;
+      --text-muted: #64748b;
+      --border: #e2e8f0;
+    }
+
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+
+    body {
+      font-family: var(--font-sarabun);
+      background: var(--bg-dark);
+      color: var(--text-main);
+      overflow: hidden;
+      height: 100vh;
+      display: flex;
+      flex-direction: column;
+      user-select: none;
+    }
+
+    /* Top Controls Bar */
+    .top-bar {
+      height: 54px;
+      background: rgba(15, 23, 42, 0.95);
+      border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 0 24px;
+      color: #e2e8f0;
+      font-size: 20px;
+    }
+
+    .project-tag {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      font-weight: 600;
+      color: #38bdf8;
+    }
+
+    .controls {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+
+    .btn {
+      font-family: var(--font-sarabun);
+      font-size: 19px;
+      padding: 4px 14px;
+      border-radius: 6px;
+      border: 1px solid rgba(255, 255, 255, 0.2);
+      background: rgba(255, 255, 255, 0.1);
+      color: #fff;
+      cursor: pointer;
+      transition: all 0.2s ease;
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+    }
+
+    .btn:hover {
+      background: rgba(255, 255, 255, 0.25);
+      border-color: rgba(255, 255, 255, 0.4);
+    }
+
+    .btn-primary {
+      background: var(--primary);
+      border-color: var(--primary);
+    }
+    .btn-primary:hover {
+      background: var(--primary-dark);
+    }
+
+    /* Main Slide Container */
+    .slide-wrapper {
+      flex: 1;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 24px;
+      position: relative;
+    }
+
+    .slide {
+      background: var(--slide-bg);
+      width: 100%;
+      max-width: 1100px;
+      aspect-ratio: 16 / 9;
+      max-height: 85vh;
+      border-radius: 18px;
+      box-shadow: 0 20px 40px rgba(0, 0, 0, 0.4);
+      padding: 48px 56px;
+      display: none;
+      flex-direction: column;
+      position: relative;
+      animation: fadeIn 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+      overflow-y: auto;
+    }
+
+    .slide.active {
+      display: flex;
+    }
+
+    @keyframes fadeIn {
+      from { opacity: 0; transform: translateY(10px) scale(0.99); }
+      to { opacity: 1; transform: translateY(0) scale(1); }
+    }
+
+    /* Typography in TH Sarabun New */
+    h1 {
+      font-size: 42px;
+      font-weight: 700;
+      color: #0f172a;
+      line-height: 1.2;
+      margin-bottom: 8px;
+    }
+
+    h2 {
+      font-size: 34px;
+      font-weight: 700;
+      color: #1e293b;
+      margin-bottom: 20px;
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+
+    h3 {
+      font-size: 26px;
+      font-weight: 600;
+      color: #334155;
+      margin-bottom: 12px;
+    }
+
+    p, li {
+      font-size: 22px;
+      line-height: 1.5;
+      color: #334155;
+    }
+
+    .subtitle {
+      font-size: 24px;
+      color: var(--text-muted);
+      margin-bottom: 24px;
+    }
+
+    .slide-content {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+    }
+
+    /* Grid Layouts */
+    .grid-2 {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 24px;
+    }
+
+    .grid-3 {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 20px;
+    }
+
+    /* Card styling */
+    .card {
+      background: #f8fafc;
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      padding: 20px 24px;
+      box-shadow: 0 2px 6px rgba(0, 0, 0, 0.04);
+      position: relative;
+    }
+
+    .card.back {
+      border-top: 4px solid var(--backend-color);
+    }
+
+    .card.front {
+      border-top: 4px solid var(--frontend-color);
+    }
+
+    .card.accent {
+      border-top: 4px solid var(--accent);
+    }
+
+    .badge {
+      display: inline-block;
+      padding: 3px 12px;
+      border-radius: 20px;
+      font-size: 18px;
+      font-weight: 600;
+      margin-bottom: 8px;
+    }
+
+    .badge-back {
+      background: #e0e7ff;
+      color: #3730a3;
+    }
+
+    .badge-front {
+      background: #ccfbf1;
+      color: #115e59;
+    }
+
+    .code-badge {
+      font-family: monospace;
+      background: #e2e8f0;
+      padding: 2px 8px;
+      border-radius: 4px;
+      font-size: 19px;
+      color: #0f172a;
+    }
+
+    /* List formatting */
+    ul {
+      list-style-position: inside;
+      margin-top: 8px;
+    }
+
+    li {
+      margin-bottom: 8px;
+    }
+
+    .highlight {
+      font-weight: 600;
+      color: #0284c7;
+    }
+
+    /* Slide Footer */
+    .slide-footer {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-top: 24px;
+      padding-top: 16px;
+      border-top: 1px solid var(--border);
+      font-size: 19px;
+      color: var(--text-muted);
+    }
+
+    /* Bottom Navigation Bar */
+    .bottom-bar {
+      height: 60px;
+      background: rgba(15, 23, 42, 0.95);
+      border-top: 1px solid rgba(255, 255, 255, 0.1);
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 0 32px;
+      color: #cbd5e1;
+    }
+
+    .nav-buttons {
+      display: flex;
+      gap: 12px;
+    }
+
+    .progress-track {
+      width: 280px;
+      height: 8px;
+      background: rgba(255, 255, 255, 0.15);
+      border-radius: 4px;
+      overflow: hidden;
+      margin: 0 16px;
+    }
+
+    .progress-fill {
+      height: 100%;
+      background: #38bdf8;
+      width: 12.5%;
+      transition: width 0.3s ease;
+    }
+
+    .indicator {
+      font-size: 20px;
+      font-weight: 600;
+    }
+
+    .keyboard-hint {
+      font-size: 17px;
+      color: #94a3b8;
+    }
+
+    /* Cover Slide Specific */
+    .cover-slide {
+      text-align: center;
+      justify-content: center;
+      align-items: center;
+      background: linear-gradient(135deg, #f8fafc 0%, #e2e8f0 100%);
+    }
+
+    .cover-badge {
+      background: #dbeafe;
+      color: #1e40af;
+      padding: 6px 18px;
+      border-radius: 30px;
+      font-size: 22px;
+      font-weight: 600;
+      margin-bottom: 16px;
+      display: inline-block;
+    }
+
+    .pill-group {
+      display: flex;
+      gap: 10px;
+      justify-content: center;
+      margin-top: 24px;
+    }
+
+    .pill {
+      background: white;
+      border: 1px solid #cbd5e1;
+      padding: 6px 16px;
+      border-radius: 8px;
+      font-size: 19px;
+      font-weight: 600;
+      box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+    }
+  </style>
+</head>
+<body>
+
+  <!-- Top Bar -->
+  <div class="top-bar">
+    <div class="project-tag">
+      <span>🍱 ระบบจัดเส้นทางส่งด่วนมื้อเที่ยง (ตลาดน้อย มมส.)</span>
+    </div>
+    <div class="controls">
+      <span class="keyboard-hint">ใช้ปุ่มลูกศร ◀ ▶ หรือ Spacebar เลื่อนสไลด์</span>
+      <button class="btn" onclick="toggleFullScreen()">⛶ เต็มจอ</button>
+    </div>
+  </div>
+
+  <!-- Slide Wrapper -->
+  <div class="slide-wrapper">
+
+    <!-- SLIDE 1: Cover -->
+    <div class="slide cover-slide active">
+      <div class="slide-content">
+        <span class="cover-badge">โครงสร้างสถาปัตยกรรมซอฟต์แวร์ (Project Structure)</span>
+        <h1 style="font-size: 48px; margin-bottom: 12px; color: #1e3a8a;">
+          การทำงานของโฟลเดอร์ Front และ Back
+        </h1>
+        <p class="subtitle" style="font-size: 26px; margin-bottom: 24px;">
+          ระบบจัดการออเดอร์ข้าวกล่องและวางแผนเส้นทางส่งอาหารไรเดอร์อัตโนมัติ (CVRP)
+        </p>
+
+        <div class="pill-group">
+          <div class="pill">⚡ Frontend: Angular 22 + Leaflet Map</div>
+          <div class="pill">⚙️ Backend: Node.js + Express + TypeScript</div>
+          <div class="pill">📍 ศูนย์กลาง: ตลาดน้อย มมส. ขามเรียง</div>
+        </div>
+      </div>
+      <div class="slide-footer">
+        <span>วิชา Advanced Web Technology 2</span>
+        <span>สไลด์ 1 จาก 8</span>
+      </div>
+    </div>
+
+    <!-- SLIDE 2: Overview Comparison -->
+    <div class="slide">
+      <h2>📁 ภาพรวมโครงสร้างระดับ Root (เปรียบเทียบ Front & Back)</h2>
+      <p class="subtitle">ระบบแบ่งการทำงานออกเป็น 2 ส่วนหลัก เพื่อความเป็นอิสระและง่ายต่อการ Deploy</p>
+
+      <div class="slide-content">
+        <div class="grid-2">
+          <!-- Back Card -->
+          <div class="card back">
+            <span class="badge badge-back">⚙️ Backend (`/Back`)</span>
+            <h3>ระบบเซิร์ฟเวอร์ & อัลกอริทึม</h3>
+            <ul>
+              <li><strong>เทคโนโลยี:</strong> Node.js, Express, TypeScript</li>
+              <li><strong>พอร์ตเริ่มต้น:</strong> <span class="code-badge">http://localhost:3000/api</span></li>
+              <li><strong>หน้าที่หลัก:</strong>
+                <ul>
+                  <li>ให้บริการ RESTful API ทั้งหมด</li>
+                  <li>คำนวณแก้โจทย์เส้นทาง CVRP (Sweep + Nearest Neighbor)</li>
+                  <li>จัดเก็บข้อมูลลูกค้า, ออเดอร์ และไรเดอร์ (In-Memory Database)</li>
+                </ul>
+              </li>
+            </ul>
+          </div>
+
+          <!-- Front Card -->
+          <div class="card front">
+            <span class="badge badge-front">💻 Frontend (`/Front`)</span>
+            <h3>หน้าจอแสดงผล & แผนที่โต้ตอบ</h3>
+            <ul>
+              <li><strong>เทคโนโลยี:</strong> Angular 22, Tailwind CSS, Leaflet Map</li>
+              <li><strong>พอร์ตเริ่มต้น:</strong> <span class="code-badge">http://localhost:4200</span></li>
+              <li><strong>หน้าที่หลัก:</strong>
+                <ul>
+                  <li>Single Page Application (SPA) ทำงานรวดเร็ว</li>
+                  <li>วาดเส้นทางไรเดอร์แยกสีลงบนแผนที่แบบ Real-time</li>
+                  <li>แยก 3 หน้าจอ: แดชบอร์ดเจ้าของร้าน, จัดการออเดอร์, ใบงานไรเดอร์</li>
+                </ul>
+              </li>
+            </ul>
+          </div>
+        </div>
+      </div>
+
+      <div class="slide-footer">
+        <span>โครงสร้างโปรเจกต์ระดับ Root Directory</span>
+        <span>สไลด์ 2 จาก 8</span>
+      </div>
+    </div>
+
+    <!-- SLIDE 3: Back Folder Structure -->
+    <div class="slide">
+      <h2>⚙️ เจาะลึกโฟลเดอร์ Backend (`Back/src/`)</h2>
+      <p class="subtitle">สถาปัตยกรรมแบบ MVC/Layered Service Architecture แยกหน้าที่กันอย่างเป็นระเบียบ</p>
+
+      <div class="slide-content">
+        <div class="grid-2">
+          <div class="card">
+            <h3 style="color: #4f46e5;">📂 controllers/ (ส่วนรับคำสั่ง API)</h3>
+            <p>รับคำสั่ง HTTP Request จากเว็บ แล้วส่ง JSON กลับไป:</p>
+            <ul>
+              <li><span class="code-badge">customerController.ts</span>: ค้นหาเบอร์โทร, ค้นหาตามรัศมี</li>
+              <li><span class="code-badge">orderController.ts</span>: รับออเดอร์, สุ่มสร้าง 24 ออเดอร์</li>
+              <li><span class="code-badge">dispatchController.ts</span>: สั่งคำนวณเส้นทาง, จัดการใบงาน</li>
+            </ul>
+          </div>
+
+          <div class="card">
+            <h3 style="color: #0891b2;">📂 services/ (ส่วนคำนวณอัลกอริทึม)</h3>
+            <p>ประกอบด้วยไฟล์ <strong>routingService.ts</strong> ซึ่งเป็นมันสมองของระบบ:</p>
+            <ul>
+              <li><strong>Sweep Algorithm:</strong> เรียงมุม Polar Angle รอบร้านตลาดน้อยเพื่อแบ่งโซนงาน <strong>ไม่ให้เส้นทางวิ่งตัดกัน</strong></li>
+              <li><strong>Capacity Limit:</strong> คุมโควต้าไรเดอร์ไม่เกิน 10 กล่อง/คน</li>
+              <li><strong>Nearest Neighbor:</strong> เรียงลำดับจุดส่งที่ใกล้ที่สุดต่อเนื่องกัน</li>
+            </ul>
+          </div>
+        </div>
+      </div>
+
+      <div class="slide-footer">
+        <span>Backend Architecture: Controllers & Services</span>
+        <span>สไลด์ 3 จาก 8</span>
+      </div>
+    </div>
+
+    <!-- SLIDE 4: Back DB and Models -->
+    <div class="slide">
+      <h2>🗄️ Backend: ส่วนของฐานข้อมูล (`db/`) และ (`models/`)</h2>
+      <p class="subtitle">การจัดเก็บข้อมูลและการสร้างโครงสร้างชนิดข้อมูล (Data Contract)</p>
+
+      <div class="slide-content">
+        <div class="grid-2">
+          <div class="card">
+            <h3 style="color: #059669;">📂 db/ (การจัดเก็บข้อมูล)</h3>
+            <ul>
+              <li><span class="code-badge">database.ts</span>:
+                <ul>
+                  <li>จัดเก็บข้อมูลแบบ <strong>In-Memory Store</strong> ทำให้ทำงานได้รวดเร็วทันทีโดยไม่ต้องต่อฐานข้อมูลจริงภายนอก</li>
+                  <li>ฟังก์ชัน <strong>calculateDistanceKm</strong>: ใช้สูตร Haversine คำนวณระยะห่างพิกัดจริงบนผิวโลก (กม.)</li>
+                  <li>กำหนดพิกัดศูนย์กลาง: ร้านตลาดน้อย มมส. (16.2435, 103.2545)</li>
+                </ul>
+              </li>
+              <li><span class="code-badge">schema.sql</span>: ออกแบบ DDL ตาราง MySQL (customers, orders, riders, routes) สำหรับ Production</li>
+            </ul>
+          </div>
+
+          <div class="card">
+            <h3 style="color: #d97706;">📂 models/ (โครงสร้าง Data Interface)</h3>
+            <ul>
+              <li><span class="code-badge">Customer.ts</span>: ชื่อ, นามสกุล, เบอร์โทรศัพท์, ที่อยู่, พิกัด Lat/Lng</li>
+              <li><span class="code-badge">Order.ts</span>: จำนวนกล่อง (ไม่เกิน 3 กล่อง/ออเดอร์), เวลาส่ง 12:30, สถานะ</li>
+              <li><span class="code-badge">Rider.ts</span>: รหัสไรเดอร์, ชื่อ, ความจุสูงสุด (10 กล่อง), สีประจำตัว</li>
+              <li><span class="code-badge">Route.ts</span>: ลำดับจุดจอดส่ง (Stops), สรุปเวลารวม, สรุประยะทาง</li>
+            </ul>
+          </div>
+        </div>
+      </div>
+
+      <div class="slide-footer">
+        <span>Backend Architecture: Database & Data Models</span>
+        <span>สไลด์ 4 จาก 8</span>
+      </div>
+    </div>
+
+    <!-- SLIDE 5: Front Folder Structure -->
+    <div class="slide">
+      <h2>💻 เจาะลึกโครงสร้าง Frontend (`Front/src/`)</h2>
+      <p class="subtitle">โครงสร้างเว็บทันสมัยด้วย Angular Standalone Components</p>
+
+      <div class="slide-content">
+        <div class="grid-3">
+          <div class="card front">
+            <h3>📂 environments/</h3>
+            <p>เก็บค่าการเชื่อมต่อ API:</p>
+            <ul>
+              <li><span class="code-badge">environment.ts</span>: สำหรับทดสอบในเครื่อง (<span class="highlight">localhost:3000</span>)</li>
+              <li><span class="code-badge">environment.prod.ts</span>: สำหรับใช้งานบนอินเทอร์เน็ต (เช่น Render Backend)</li>
+            </ul>
+          </div>
+
+          <div class="card front">
+            <h3>📂 app/services/</h3>
+            <p>ตัวกลางเชื่อมต่อเครือข่าย:</p>
+            <ul>
+              <li><span class="code-badge">api.service.ts</span>: ส่ง HTTP Request (GET, POST, PUT, DELETE, PATCH) ไปยัง Backend อัตโนมัติ</li>
+            </ul>
+          </div>
+
+          <div class="card front">
+            <h3>📂 app/models/</h3>
+            <p>โมเดลชนิดข้อมูลฝั่งหน้าเว็บ:</p>
+            <ul>
+              <li><span class="code-badge">delivery.model.ts</span>: กำหนด Interface ข้อมูลออเดอร์และเส้นทางให้ตรงกับ Backend</li>
+            </ul>
+          </div>
+        </div>
+      </div>
+
+      <div class="slide-footer">
+        <span>Frontend Architecture: Core Modules</span>
+        <span>สไลด์ 5 จาก 8</span>
+      </div>
+    </div>
+
+    <!-- SLIDE 6: Front UI & 3 Roles -->
+    <div class="slide">
+      <h2>🖥️ หน้าจอการทำงานหลักของ Frontend (`Front/src/app/`)</h2>
+      <p class="subtitle">ควบคุมโดยไฟล์ app.ts (Signals State) + app.html + แผนที่ Leaflet</p>
+
+      <div class="slide-content">
+        <div class="grid-3">
+          <!-- Role 1 -->
+          <div class="card">
+            <span class="badge" style="background:#fee2e2; color:#991b1b;">หน้าจอที่ 1</span>
+            <h3>👑 เจ้าของร้าน (Owner)</h3>
+            <ul>
+              <li>สรุปสถิติจำนวนออเดอร์และกล่อง</li>
+              <li><strong>แผนที่ Leaflet รวม:</strong> แสดงพิกัดร้านและลากเส้นทางส่งของไรเดอร์ทุกคนแยกตามสี</li>
+              <li>ปุ่ม <strong>"จัดเส้นทางอัจฉริยะ"</strong> กดคำนวณและแบ่งงานทันที</li>
+            </ul>
+          </div>
+
+          <!-- Role 2 -->
+          <div class="card">
+            <span class="badge" style="background:#e0f2fe; color:#075985;">หน้าจอที่ 2</span>
+            <h3>📋 จัดการออเดอร์</h3>
+            <ul>
+              <li>ฟอร์มบันทึกออเดอร์ข้าวกล่อง</li>
+              <li><strong>ค้นหาลูกค้าเดิมด้วยเบอร์โทร:</strong> ดึงพิกัดและที่อยู่อัตโนมัติ ไม่ต้องพิมพ์ซ้ำ</li>
+              <li>ปุ่มสุ่ม 24 ออเดอร์ตัวอย่าง</li>
+              <li>ปุ่มกรองระยะ 1 กม. และ 2 กม.</li>
+            </ul>
+          </div>
+
+          <!-- Role 3 -->
+          <div class="card">
+            <span class="badge" style="background:#fef3c7; color:#92400e;">หน้าจอที่ 3</span>
+            <h3>🛵 ไรเดอร์ (Rider Sheet)</h3>
+            <ul>
+              <li>เลือกชื่อไรเดอร์เพื่อดูใบงานเฉพาะตัว</li>
+              <li>แสดงรายการจุดส่ง เรียงลำดับ 1, 2, 3... พร้อมเวลาที่ควรถึง</li>
+              <li>มีแผนที่นำทาง In-Page</li>
+              <li>ปุ่มกด <strong>"ยืนยันส่งมอบสำเร็จ"</strong></li>
+            </ul>
+          </div>
+        </div>
+      </div>
+
+      <div class="slide-footer">
+        <span>Frontend UI: 3 Role-Based Interfaces</span>
+        <span>สไลด์ 6 จาก 8</span>
+      </div>
+    </div>
+
+    <!-- SLIDE 7: How Front & Back Work Together -->
+    <div class="slide">
+      <h2>🔄 วงจรการทำงานร่วมกันระหว่าง Front และ Back (End-to-End Workflow)</h2>
+      <p class="subtitle">ลำดับเหตุการณ์การส่งผ่านข้อมูลเมื่อใช้งานระบบจริง</p>
+
+      <div class="slide-content">
+        <div class="card accent" style="padding: 28px;">
+          <ol style="list-style-position: inside; line-height: 2;">
+            <li><strong style="color: #0284c7;">1. บันทึกคำสั่งซื้อ:</strong> ผู้ใช้บันทึกออเดอร์ที่หน้าเว็บ <span class="code-badge">Front (app.ts)</span> ➔ ยิงผ่าน <span class="code-badge">api.service.ts</span> ➔ เข้า <span class="code-badge">Back (orderController.ts)</span> ➔ บันทึกลง <span class="code-badge">database.ts</span></li>
+            <li><strong style="color: #0284c7;">2. สั่งประมวลผลเส้นทาง:</strong> เจ้าของร้านกดปุ่ม "จัดเส้นทาง" ➔ ยิงไปที่ <span class="code-badge">dispatchController.ts</span> ➔ เรียกใช้งานอัลกอริทึมใน <span class="code-badge">routingService.ts</span></li>
+            <li><strong style="color: #0284c7;">3. อัลกอริทึมแบ่งงาน:</strong> ใช้ Sweep Algorithm แบ่งกลุ่มลูกค้าให้ไรเดอร์ (ไม่เกิน 10 กล่อง/คน) และจัดลำดับจุดส่งให้ทันก่อน 12:30 น.</li>
+            <li><strong style="color: #0284c7;">4. วาดแผนที่:</strong> ส่งข้อมูล JSON แผนงานกลับมาที่หน้าเว็บ ➔ <span class="code-badge">app.ts</span> วาดเส้น Polyline บนแผนที่ Leaflet แยกสีตามไรเดอร์แต่ละคัน</li>
+            <li><strong style="color: #0284c7;">5. ไรเดอร์ส่งมอบ:</strong> ไรเดอร์เปิดดูใบงานในโทรศัพท์ ➔ ส่งเสร็จกดส่งมอบ ➔ ระบบอัปเดตสถานะเป็น "Delivered" ทันที</li>
+          </ol>
+        </div>
+      </div>
+
+      <div class="slide-footer">
+        <span>System Integration & Workflow</span>
+        <span>สไลด์ 7 จาก 8</span>
+      </div>
+    </div>
+
+    <!-- SLIDE 8: Summary & Commands -->
+    <div class="slide">
+      <h2>🚀 สรุปคำสั่งสำหรับการรันระบบ (Quick Cheat Sheet)</h2>
+      <p class="subtitle">ขั้นตอนการเริ่มใช้งานโปรเจกต์ทั้งสองฝั่งบนเครื่องของคุณ</p>
+
+      <div class="slide-content">
+        <div class="grid-2">
+          <div class="card back">
+            <h3>1. ฝั่ง Backend API</h3>
+            <p>เปิด Terminal หน้าต่างที่ 1:</p>
+            <div style="background:#1e293b; color:#38bdf8; padding:12px; border-radius:8px; font-family:monospace; margin:10px 0; font-size:20px;">
+              cd Back<br>
+              npm install<br>
+              npm run dev
+            </div>
+            <p>✅ เซิร์ฟเวอร์เปิดที่: <strong>http://localhost:3000/api</strong></p>
+          </div>
+
+          <div class="card front">
+            <h3>2. ฝั่ง Frontend Angular</h3>
+            <p>เปิด Terminal หน้าต่างที่ 2:</p>
+            <div style="background:#1e293b; color:#38bdf8; padding:12px; border-radius:8px; font-family:monospace; margin:10px 0; font-size:20px;">
+              cd Front<br>
+              npm install<br>
+              npm start
+            </div>
+            <p>✅ หน้าเว็บเปิดที่: <strong>http://localhost:4200</strong></p>
+          </div>
+        </div>
+      </div>
+
+      <div class="slide-footer">
+        <span>จบการนำเสนอโครงสร้างโปรเจกต์</span>
+        <span>สไลด์ 8 จาก 8</span>
+      </div>
+    </div>
+
+  </div>
+
+  <!-- Bottom Navigation Bar -->
+  <div class="bottom-bar">
+    <div class="indicator" id="slideIndicator">สไลด์ 1 / 8</div>
+    
+    <div style="display: flex; align-items: center;">
+      <div class="progress-track">
+        <div class="progress-fill" id="progressFill"></div>
+      </div>
+    </div>
+
+    <div class="nav-buttons">
+      <button class="btn" id="prevBtn" onclick="prevSlide()">◀ ก่อนหน้า</button>
+      <button class="btn btn-primary" id="nextBtn" onclick="nextSlide()">ถัดไป ▶</button>
+    </div>
+  </div>
+
+  <script>
+    const slides = document.querySelectorAll('.slide');
+    const totalSlides = slides.length;
+    let currentSlide = 0;
+
+    const indicator = document.getElementById('slideIndicator');
+    const progressFill = document.getElementById('progressFill');
+    const prevBtn = document.getElementById('prevBtn');
+    const nextBtn = document.getElementById('nextBtn');
+
+    function updateSlide(index) {
+      if (index < 0) index = 0;
+      if (index >= totalSlides) index = totalSlides - 1;
+      
+      slides.forEach((slide, idx) => {
+        slide.classList.toggle('active', idx === index);
+      });
+
+      currentSlide = index;
+      indicator.textContent = `สไลด์ ${currentSlide + 1} / ${totalSlides}`;
+      progressFill.style.width = `${((currentSlide + 1) / totalSlides) * 100}%`;
+
+      prevBtn.disabled = (currentSlide === 0);
+      prevBtn.style.opacity = (currentSlide === 0) ? '0.5' : '1';
+      nextBtn.textContent = (currentSlide === totalSlides - 1) ? 'จบสไลด์' : 'ถัดไป ▶';
+    }
+
+    function nextSlide() {
+      if (currentSlide < totalSlides - 1) {
+        updateSlide(currentSlide + 1);
+      }
+    }
+
+    function prevSlide() {
+      if (currentSlide > 0) {
+        updateSlide(currentSlide - 1);
+      }
+    }
+
+    // Keyboard Shortcuts
+    document.addEventListener('keydown', (e) => {
+      if (e.key === 'ArrowRight' || e.key === ' ' || e.key === 'PageDown') {
+        nextSlide();
+      } else if (e.key === 'ArrowLeft' || e.key === 'PageUp') {
+        prevSlide();
+      } else if (e.key === 'Home') {
+        updateSlide(0);
+      } else if (e.key === 'End') {
+        updateSlide(totalSlides - 1);
+      }
+    });
+
+    // Full Screen Toggle
+    function toggleFullScreen() {
+      if (!document.fullscreenElement) {
+        document.documentElement.requestFullscreen().catch(err => {});
+      } else {
+        if (document.exitFullscreen) {
+          document.exitFullscreen();
+        }
+      }
+    }
+
+    // Initial load
+    updateSlide(0);
+  </script>
+</body>
+</html>
