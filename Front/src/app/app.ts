@@ -15,34 +15,27 @@ import * as L from 'leaflet';
 export class App implements OnInit, AfterViewInit {
   private api = inject(ApiService);
 
-  // จุดศูนย์กลาง: ร้านส่งด่วนมื้อเที่ยง ณ ตลาดน้อย มมส. (ม.ใหม่ ขามเรียง)
   readonly MSU_LAT = 16.2435;
   readonly MSU_LNG = 103.2545;
 
-  // Active Navigation Tab (Owner, Orders, Rider)
   activeTab = signal<'owner' | 'orders' | 'rider'>('owner');
 
-  // Backend Health
   backendConnected = signal<boolean>(false);
   isLoading = signal<boolean>(false);
   alertMessage = signal<{ type: 'success' | 'error' | 'info'; text: string } | null>(null);
 
-  // Data Signals
   customers = signal<Customer[]>([]);
   orders = signal<Order[]>([]);
   totalOrderCount = signal<number>(0);
   riders = signal<Rider[]>([]);
   dispatchPlan = signal<DispatchPlan | null>(null);
 
-  // Rider View State
   selectedRiderId = signal<number>(1);
   currentRiderSheet = signal<RiderSheetData | null>(null);
 
-  // Rider In-Page Navigation Map State
   activeStopForMap = signal<RouteStop | null>(null);
   private riderModalMap: L.Map | null = null;
 
-  // Order & Customer Form State
   customerSearchQuery = '';
   searchPhoneQuery = '';
   phoneLookupResult = signal<string | null>(null);
@@ -58,10 +51,8 @@ export class App implements OnInit, AfterViewInit {
     note: 'มื้อเที่ยงส่งด่วน มมส.',
   };
 
-  // Filter States
   currentFilterLabel = signal<string>('แสดงทั้งหมด');
 
-  // Leaflet Map Reference for Owner Dashboard
   private map: L.Map | null = null;
   private routeLayers: L.LayerGroup | null = null;
 
@@ -151,9 +142,6 @@ export class App implements OnInit, AfterViewInit {
     });
   }
 
-  // --- ACTIONS ---
-
-  // 1. จัดเส้นทาง
   optimizeRoutes() {
     this.isLoading.set(true);
     this.api.optimizeRoutes().subscribe({
@@ -171,7 +159,6 @@ export class App implements OnInit, AfterViewInit {
     });
   }
 
-  // 2. จำลองออเดอร์
   mockOrders(count = 24) {
     this.isLoading.set(true);
     this.api.mockOrders(count).subscribe({
@@ -191,7 +178,6 @@ export class App implements OnInit, AfterViewInit {
     });
   }
 
-  // 3. ล้างออเดอร์ทั้งหมด
   clearOrders() {
     if (!confirm('ยืนยันล้างรายการสั่งซื้อทั้งหมด?')) return;
     this.isLoading.set(true);
@@ -211,7 +197,6 @@ export class App implements OnInit, AfterViewInit {
     });
   }
 
-  // 4. ค้นหาลูกค้าเดิมด้วยเบอร์โทร
   lookupCustomerByPhone() {
     if (!this.searchPhoneQuery.trim()) return;
     this.api.getCustomerByPhone(this.searchPhoneQuery.trim()).subscribe({
@@ -232,7 +217,6 @@ export class App implements OnInit, AfterViewInit {
     });
   }
 
-  // สุ่มพิกัดรอบๆ มมส. ขามเรียง
   generateRandomLocation() {
     const angle = Math.random() * 2 * Math.PI;
     const distanceOffset = 0.002 + Math.random() * 0.010;
@@ -240,7 +224,6 @@ export class App implements OnInit, AfterViewInit {
     this.newOrderForm.longitude = Math.round((this.MSU_LNG + Math.cos(angle) * distanceOffset * 1.05) * 1000000) / 1000000;
   }
 
-  // 5. บันทึกออเดอร์ใหม่
   submitNewOrder() {
     if (!this.newOrderForm.firstName || !this.newOrderForm.phone || !this.newOrderForm.address) {
       this.showAlert('error', 'กรุณากรอกข้อมูลลูกค้าให้ครบถ้วน');
@@ -286,7 +269,6 @@ export class App implements OnInit, AfterViewInit {
     });
   }
 
-  // 6. แก้ไขจำนวนกล่อง
   changeBoxCount(order: Order, delta: number) {
     const newCount = order.boxCount + delta;
     if (newCount < 1 || newCount > 3) {
@@ -302,7 +284,6 @@ export class App implements OnInit, AfterViewInit {
     });
   }
 
-  // 7. ลบออเดอร์
   deleteOrder(id: number) {
     if (!confirm(`ต้องการลบรายการสั่งซื้อ #${id}?`)) return;
     this.api.deleteOrder(id).subscribe({
@@ -314,7 +295,6 @@ export class App implements OnInit, AfterViewInit {
     });
   }
 
-  // 8. ค้นหาออเดอร์และลูกค้า (แก้ไขบั๊ก: ค้นหาแล้วตารางอัปเดตทันที)
   onSearchOrders() {
     const q = this.customerSearchQuery.trim();
     if (!q) {
@@ -333,7 +313,6 @@ export class App implements OnInit, AfterViewInit {
     });
   }
 
-  // 9. กรองออเดอร์ในระยะ 1 กม. จาก มมส.
   filterOrdersNearby1Km() {
     this.api.getOrdersNearby(this.MSU_LAT, this.MSU_LNG, 1.0).subscribe({
       next: (res) => {
@@ -347,7 +326,6 @@ export class App implements OnInit, AfterViewInit {
     });
   }
 
-  // 10. กรองออเดอร์ในระยะ 2 กม. จาก มมส.
   filterOrdersNearby2Km() {
     this.api.getOrdersNearby(this.MSU_LAT, this.MSU_LNG, 2.0).subscribe({
       next: (res) => {
@@ -361,7 +339,6 @@ export class App implements OnInit, AfterViewInit {
     });
   }
 
-  // --- RIDER VIEW METHODS ---
   selectRider(id: number) {
     this.selectedRiderId.set(id);
     this.loadRiderSheet(id);
@@ -387,7 +364,6 @@ export class App implements OnInit, AfterViewInit {
     });
   }
 
-  // แสดงเส้นทางบนเว็บนี้เลย (In-Page Leaflet Map สำหรับไรเดอร์)
   openRiderMap(stop: RouteStop) {
     this.activeStopForMap.set(stop);
     setTimeout(() => {
@@ -422,7 +398,6 @@ export class App implements OnInit, AfterViewInit {
       attribution: 'OpenStreetMap contributors',
     }).addTo(this.riderModalMap);
 
-    // Marker Depot (ร้าน มมส.)
     const depotIcon = L.divIcon({
       html: `<div class="flex items-center justify-center w-7 h-7 bg-slate-900 text-white rounded-md text-[10px] font-bold border border-white">ร้าน</div>`,
       className: 'depot-custom-marker',
@@ -433,7 +408,6 @@ export class App implements OnInit, AfterViewInit {
       .bindPopup('<b>ร้านส่งด่วนมื้อเที่ยง (ตลาดน้อย มมส.)</b>')
       .addTo(this.riderModalMap);
 
-    // Marker Destination (ลูกค้า)
     const customerIcon = L.divIcon({
       html: `<div class="flex items-center justify-center w-8 h-8 bg-orange-600 text-white rounded-full text-xs font-bold border-2 border-white shadow">${stop.stopOrder}</div>`,
       className: 'stop-custom-marker',
@@ -445,7 +419,6 @@ export class App implements OnInit, AfterViewInit {
       .addTo(this.riderModalMap)
       .openPopup();
 
-    // เส้นทางตรงจาก ร้าน -> ลูกค้า
     L.polyline([
       [depotLat, depotLng],
       [stop.latitude, stop.longitude]
@@ -456,7 +429,6 @@ export class App implements OnInit, AfterViewInit {
       opacity: 0.9,
     }).addTo(this.riderModalMap);
 
-    // Fit bounds
     const bounds = L.latLngBounds([
       [depotLat, depotLng],
       [stop.latitude, stop.longitude]
@@ -465,7 +437,6 @@ export class App implements OnInit, AfterViewInit {
     setTimeout(() => this.riderModalMap?.invalidateSize(), 150);
   }
 
-  // --- LEAFLET MAP LOGIC (OWNER DASHBOARD) ---
   private initMap() {
     const mapContainer = document.getElementById('route-map');
     if (!mapContainer) return;
@@ -505,7 +476,7 @@ export class App implements OnInit, AfterViewInit {
     const depotLat = plan ? plan.restaurantLocation.latitude : this.MSU_LAT;
     const depotLng = plan ? plan.restaurantLocation.longitude : this.MSU_LNG;
 
-    // Depot Marker (ร้าน มมส.)
+
     const depotIcon = L.divIcon({
       html: `
         <div class="flex items-center justify-center w-9 h-9 bg-slate-900 text-white rounded-lg shadow-md border-2 border-white text-xs font-bold">

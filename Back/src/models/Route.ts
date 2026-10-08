@@ -2,7 +2,7 @@ import { Order } from './Order';
 import { Rider } from './Rider';
 
 export interface RouteStop {
-  stopOrder: number; // 1, 2, 3...
+  stopOrder: number;
   type: 'pickup' | 'delivery' | 'return';
   orderId?: number;
   order?: Order;
@@ -12,7 +12,7 @@ export interface RouteStop {
   latitude: number;
   longitude: number;
   boxCount: number;
-  estimatedArrival: string; // e.g. "11:45"
+  estimatedArrival: string;
   distanceFromPrevKm: number;
   status: 'pending' | 'delivered';
 }
@@ -20,12 +20,12 @@ export interface RouteStop {
 export interface RiderRoute {
   riderId: number;
   rider: Rider;
-  totalBoxes: number; // <= 10
+  totalBoxes: number;
   totalDistanceKm: number;
-  estimatedDurationMinutes: number; // Must ensure arrival before 12:30 PM (<= 60 mins)
+  estimatedDurationMinutes: number;
   color: string;
   stops: RouteStop[];
-  polylineCoordinates: [number, number][]; // [lat, lng] path
+  polylineCoordinates: [number, number][];
   isOverCapacity: boolean;
   isLateRisk: boolean;
 }
@@ -47,6 +47,6 @@ export interface DispatchPlan {
     avgTimePerRiderMinutes: number;
     totalDistanceAllRidersKm: number;
     allOnTime: boolean;
-    estimatedSavedPenaltyBaht: number; // 20 THB per order saved!
+    estimatedSavedPenaltyBaht: number;
   };
 }

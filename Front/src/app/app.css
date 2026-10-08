@@ -1,13 +1,12 @@
-/* Custom Marker Styles for Leaflet */
 .depot-custom-marker,
 .stop-custom-marker {
   background: transparent;
   border: none;
 }
 
-/* Leaflet Map responsiveness */
 .leaflet-container {
   font-family: 'Prompt', sans-serif !important;
   width: 100%;
   height: 100%;
 }
+

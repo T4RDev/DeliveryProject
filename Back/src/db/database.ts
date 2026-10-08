@@ -2,7 +2,6 @@ import { Customer } from '../models/Customer';
 import { Order } from '../models/Order';
 import { Rider } from '../models/Rider';
 
-// จุดศูนย์กลาง: ร้านส่งด่วนมื้อเที่ยง ณ ตลาดน้อย มมส. (ม.ใหม่ ขามเรียง)
 export const RESTAURANT_DEPOT = {
   name: 'ร้านส่งด่วนมื้อเที่ยง (ตลาดน้อย มมส.)',
   address: 'ศูนย์อาหารตลาดน้อย มหาวิทยาลัยมหาสารคาม (มมส. ขามเรียง) ตำบลขามเรียง อำเภอกันทรวิชัย จังหวัดมหาสารคาม',
@@ -10,27 +9,25 @@ export const RESTAURANT_DEPOT = {
   longitude: 103.2545,
 };
 
-// Haversine formula to calculate distance in km
 export function calculateDistanceKm(
   lat1: number,
   lon1: number,
   lat2: number,
   lon2: number
 ): number {
-  const R = 6371; // Earth's radius in km
+  const R = 6371;
   const dLat = ((lat2 - lat1) * Math.PI) / 180;
   const dLon = ((lon2 - lon1) * Math.PI) / 180;
   const a =
     Math.sin(dLat / 2) * Math.sin(dLat / 2) +
     Math.cos((lat1 * Math.PI) / 180) *
-      Math.cos((lat2 * Math.PI) / 180) *
-      Math.sin(dLon / 2) *
-      Math.sin(dLon / 2);
+    Math.cos((lat2 * Math.PI) / 180) *
+    Math.sin(dLon / 2) *
+    Math.sin(dLon / 2);
   const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
   return Math.round(R * c * 100) / 100;
 }
 
-// In-Memory Database Store
 export class Database {
   private customers: Customer[] = [];
   private orders: Order[] = [];
@@ -44,7 +41,6 @@ export class Database {
     this.generateMockOrders(24);
   }
 
-  // --- RIDERS ---
   private seedRiders() {
     this.riders = [
       { id: 1, name: 'ไรเดอร์ สมชาย (คันที่ 1)', phone: '081-111-2233', maxCapacity: 10, color: '#EF4444', status: 'available' },
@@ -64,7 +60,6 @@ export class Database {
     return this.riders.find((r) => r.id === id);
   }
 
-  // --- CUSTOMERS (รอบ มมส. ขามเรียง) ---
   private seedInitialCustomers() {
     const rawCustomers = [
       { firstName: 'สมชาย', lastName: 'มีโชคดี', phone: '089-123-4567', address: 'ตึกสิริวิทย์ คณะศึกษาศาสตร์ มมส.', latOffset: 0.0035, lngOffset: 0.0025 },
@@ -162,7 +157,7 @@ export class Database {
     return this.customers.length < initialLen;
   }
 
-  // --- ORDERS ---
+
   getAllOrders(query?: string): Order[] {
     let result = this.orders.map((o) => ({
       ...o,
@@ -253,14 +248,12 @@ export class Database {
       .sort((a, b) => a.distanceKm - b.distanceKm);
   }
 
-  // Generate 20-30 mock orders around MSU Khamriang
   generateMockOrders(count = 24): Order[] {
     this.clearOrders();
 
     const firstNames = ['สมชาย', 'สมพร', 'วิภา', 'อรทัย', 'ชาญชัย', 'พรทิพย์', 'ณัฐวุฒิ', 'ศุภชัย', 'กาญจนา', 'ธนากร', 'ประวิทย์', 'สุภาพร', 'เอกชัย', 'มณีรัตน์', 'เฉลิมชัย', 'จารุวรรณ', 'ชลธิชา', 'ธีระพงษ์', 'ปิยะมาศ', 'วรวิทย์', 'อภิสิทธิ์', 'ดวงใจ', 'สุรชัย', 'ทิพวรรณ'];
     const lastNames = ['วงศ์สวัสดิ์', 'เจริญสุข', 'ศรีวิไล', 'บุญชู', 'รัตนโกสินทร์', 'พานิชย์เจริญ', 'เกษมสันต์', 'คงเจริญ', 'มั่นคง', 'ศรีสุข', 'สิทธิโชค', 'วัฒนพาณิชย์'];
-    
-    // สถานที่จริงรอบ ม.มหาสารคาม (มมส. ขามเรียง)
+
     const msuLocations = [
       'ตึกสิริวิทย์ คณะศึกษาศาสตร์ มมส.',
       'อาคารบรมราชกุมารี (สำนักงานอธิการบดี มมส.)',
@@ -296,12 +289,12 @@ export class Database {
       const phone = `08${Math.floor(10000000 + Math.random() * 90000000)}`;
       const address = msuLocations[i % msuLocations.length];
 
-      // Cluster within 0.3 - 1.8 km around MSU Khamriang (Lat 16.2443, Lng 103.2504)
+
       const angle = (i / count) * 2 * Math.PI + (Math.random() * 0.2 - 0.1);
-      // Half orders within 1.0 km, others up to 1.8 km
-      const distanceOffset = i % 2 === 0 
-        ? 0.002 + Math.random() * 0.005  // ~0.3 - 0.8 km (within 1km)
-        : 0.008 + Math.random() * 0.007; // ~1.0 - 1.8 km (within 2km)
+
+      const distanceOffset = i % 2 === 0
+        ? 0.002 + Math.random() * 0.005
+        : 0.008 + Math.random() * 0.007;
 
       const lat = Math.round((RESTAURANT_DEPOT.latitude + Math.sin(angle) * distanceOffset) * 1000000) / 1000000;
       const lng = Math.round((RESTAURANT_DEPOT.longitude + Math.cos(angle) * distanceOffset * 1.05) * 1000000) / 1000000;
@@ -315,7 +308,7 @@ export class Database {
         longitude: lng,
       });
 
-      const boxCount = Math.floor(Math.random() * 3) + 1; // 1-3 boxes
+      const boxCount = Math.floor(Math.random() * 3) + 1;
 
       const order: Order = {
         id: this.nextOrderId++,

@@ -4,13 +4,6 @@ import { Rider } from '../models/Rider';
 import { DispatchPlan, RiderRoute, RouteStop } from '../models/Route';
 
 export class RoutingService {
-  /**
-   * Optimizes delivery routes using Capacitated Vehicle Routing Problem (CVRP)
-   * Enforces:
-   * 1. Max 10 lunchboxes per rider
-   * 2. Shortest route / no criss-crossing routes
-   * 3. Delivery completed within 60 minutes (11:30 - 12:30)
-   */
   optimizeRoutes(): DispatchPlan {
     const orders = db.getAllOrders().filter((o) => o.status !== 'delivered');
     const riders = db.getRiders();
@@ -35,8 +28,6 @@ export class RoutingService {
 
     const totalBoxes = orders.reduce((sum, o) => sum + o.boxCount, 0);
 
-    // 1. Sort orders by polar angle relative to restaurant depot (Sweep Clustering)
-    // This groups customers by geographic sector so riders don't cross each other's paths!
     const ordersWithAngle = orders.map((order) => {
       const lat = order.customer?.latitude ?? RESTAURANT_DEPOT.latitude;
       const lng = order.customer?.longitude ?? RESTAURANT_DEPOT.longitude;
@@ -52,14 +43,12 @@ export class RoutingService {
 
     ordersWithAngle.sort((a, b) => a.angle - b.angle);
 
-    // 2. Partition sorted orders into rider clusters respecting capacity (max 10 boxes)
     const riderClusters: Array<{ orders: Order[]; boxCount: number }> = [];
     let currentClusterOrders: Order[] = [];
     let currentClusterBoxes = 0;
 
     for (const item of ordersWithAngle) {
       if (currentClusterBoxes + item.order.boxCount > 10) {
-        // Exceeds 10 boxes -> finalize this cluster and start a new one
         if (currentClusterOrders.length > 0) {
           riderClusters.push({
             orders: currentClusterOrders,
@@ -81,7 +70,6 @@ export class RoutingService {
       });
     }
 
-    // 3. For each cluster, solve TSP (Traveling Salesperson) from Depot using Nearest Neighbor
     const routes: RiderRoute[] = [];
     let totalSystemDistance = 0;
     let totalSystemDuration = 0;
@@ -89,7 +77,6 @@ export class RoutingService {
     riderClusters.forEach((cluster, idx) => {
       const rider: Rider = riders[idx % riders.length];
 
-      // Nearest Neighbor Route Sequencing
       let unvisited = [...cluster.orders];
       const orderedOrders: Order[] = [];
       let currentLat = RESTAURANT_DEPOT.latitude;
@@ -116,7 +103,6 @@ export class RoutingService {
         currentLng = nextOrder.customer?.longitude ?? currentLng;
       }
 
-      // 4. Construct stops with arrival times and distance
       const stops: RouteStop[] = [];
       const polylineCoordinates: [number, number][] = [
         [RESTAURANT_DEPOT.latitude, RESTAURANT_DEPOT.longitude],
@@ -125,7 +111,7 @@ export class RoutingService {
       let lastLat = RESTAURANT_DEPOT.latitude;
       let lastLng = RESTAURANT_DEPOT.longitude;
       let routeDistanceKm = 0;
-      let accumulatedMinutes = 0; // Starts at 11:30 AM (0 mins elapsed)
+      let accumulatedMinutes = 0;
 
       orderedOrders.forEach((ord, stopIdx) => {
         const custLat = ord.customer?.latitude ?? lastLat;
@@ -133,11 +119,9 @@ export class RoutingService {
         const legDist = calculateDistanceKm(lastLat, lastLng, custLat, custLng);
         routeDistanceKm += legDist;
 
-        // Speed: 25 km/h in city -> 1 km takes ~2.4 mins. Plus 3 mins handover time
         const travelMinutes = Math.round(legDist * 2.4);
         accumulatedMinutes += travelMinutes + 3;
 
-        // Calculate arrival time string (Starts at 11:30)
         const totalMinutesFrom1130 = 30 + accumulatedMinutes;
         const hour = 11 + Math.floor(totalMinutesFrom1130 / 60);
         const minute = totalMinutesFrom1130 % 60;
@@ -163,11 +147,9 @@ export class RoutingService {
         lastLat = custLat;
         lastLng = custLng;
 
-        // Update order with rider
         db.updateOrder(ord.id, { assignedRiderId: rider.id, status: 'assigned' });
       });
 
-      // Return trip to Depot
       const returnDist = calculateDistanceKm(
         lastLat,
         lastLng,
@@ -192,7 +174,7 @@ export class RoutingService {
         stops,
         polylineCoordinates,
         isOverCapacity: cluster.boxCount > 10,
-        isLateRisk: accumulatedMinutes > 60, // Deadline is 12:30 (60 mins)
+        isLateRisk: accumulatedMinutes > 60,
       });
     });
 
@@ -209,7 +191,7 @@ export class RoutingService {
           routes.length > 0 ? Math.round(totalSystemDuration / routes.length) : 0,
         totalDistanceAllRidersKm: Math.round(totalSystemDistance * 10) / 10,
         allOnTime: routes.every((r) => !r.isLateRisk),
-        estimatedSavedPenaltyBaht: orders.length * 20, // 20 THB per order saved from late penalty!
+        estimatedSavedPenaltyBaht: orders.length * 20,
       },
     };
 

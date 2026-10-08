@@ -3,7 +3,6 @@ import { db, RESTAURANT_DEPOT } from '../db/database';
 
 export const orderRouter = Router();
 
-// GET /api/orders - แสดงรายการสั่งซื้อทั้งหมด (รองรับ ?q=... ค้นหาชื่อ/เบอร์/ที่อยู่)
 orderRouter.get('/', (req: Request, res: Response) => {
   try {
     const q = (req.query.q as string) || '';
@@ -20,7 +19,6 @@ orderRouter.get('/', (req: Request, res: Response) => {
   }
 });
 
-// GET /api/orders/nearby?lat=...&lng=...&radius=2 - แสดงรายการสั่งซื้อในรัศมีที่กำหนด
 orderRouter.get('/nearby', (req: Request, res: Response) => {
   try {
     const lat = parseFloat(req.query.lat as string) || RESTAURANT_DEPOT.latitude;
@@ -43,7 +41,6 @@ orderRouter.get('/nearby', (req: Request, res: Response) => {
   }
 });
 
-// POST /api/orders/mock - สร้างข้อมูลรายการสั่งซื้อตัวอย่าง
 orderRouter.post('/mock', (req: Request, res: Response) => {
   try {
     const count = parseInt(req.body.count as string) || 24;
@@ -63,7 +60,6 @@ orderRouter.post('/mock', (req: Request, res: Response) => {
   }
 });
 
-// DELETE /api/orders/clear - ล้างรายการสั่งซื้อทั้งหมด
 orderRouter.delete('/clear', (req: Request, res: Response) => {
   try {
     db.clearOrders();
@@ -88,7 +84,6 @@ orderRouter.delete('/mock', (req: Request, res: Response) => {
   }
 });
 
-// GET /api/orders/:id - ดึงข้อมูลออเดอร์รายบุคคล
 orderRouter.get('/:id', (req: Request, res: Response) => {
   try {
     const id = parseInt(req.params.id);
@@ -102,7 +97,6 @@ orderRouter.get('/:id', (req: Request, res: Response) => {
   }
 });
 
-// POST /api/orders - เพิ่มรายการสั่งซื้อ
 orderRouter.post('/', (req: Request, res: Response) => {
   try {
     const { customerId, boxCount, note } = req.body;
@@ -129,7 +123,6 @@ orderRouter.post('/', (req: Request, res: Response) => {
   }
 });
 
-// PUT /api/orders/:id - แก้ไขจำนวนกล่อง และข้อมูลออเดอร์
 orderRouter.put('/:id', (req: Request, res: Response) => {
   try {
     const id = parseInt(req.params.id);
@@ -155,7 +148,6 @@ orderRouter.put('/:id', (req: Request, res: Response) => {
   }
 });
 
-// DELETE /api/orders/:id - ลบรายการสั่งซื้อ
 orderRouter.delete('/:id', (req: Request, res: Response) => {
   try {
     const id = parseInt(req.params.id);
