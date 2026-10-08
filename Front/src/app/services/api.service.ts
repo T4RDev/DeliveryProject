@@ -11,7 +11,6 @@ export class ApiService {
   private http = inject(HttpClient);
   private baseUrl = environment.apiUrl;
 
-  // --- CUSTOMERS API ---
   getCustomers(): Observable<{ success: boolean; count: number; data: Customer[] }> {
     return this.http.get<{ success: boolean; count: number; data: Customer[] }>(`${this.baseUrl}/customers`);
   }
@@ -40,7 +39,6 @@ export class ApiService {
     return this.http.delete<{ success: boolean; message: string }>(`${this.baseUrl}/customers/${id}`);
   }
 
-  // --- ORDERS API ---
   getOrders(query?: string): Observable<{ success: boolean; count: number; totalBoxes: number; data: Order[] }> {
     const url = query && query.trim() ? `${this.baseUrl}/orders?q=${encodeURIComponent(query.trim())}` : `${this.baseUrl}/orders`;
     return this.http.get<{ success: boolean; count: number; totalBoxes: number; data: Order[] }>(url);
@@ -70,7 +68,6 @@ export class ApiService {
     return this.http.delete<{ success: boolean; message: string }>(`${this.baseUrl}/orders/clear`);
   }
 
-  // --- DISPATCH & ROUTING API ---
   optimizeRoutes(): Observable<{ success: boolean; message: string; data: DispatchPlan }> {
     return this.http.post<{ success: boolean; message: string; data: DispatchPlan }>(`${this.baseUrl}/dispatch/optimize`, {});
   }

@@ -4,8 +4,6 @@ import { routingService } from '../services/routingService';
 
 export const dispatchRouter = Router();
 
-// POST /api/dispatch/optimize - เจ้าของร้านกดปุ่ม "จัดเส้นทาง"
-// คำนวณแบ่งกลุ่มไรเดอร์ (ไม่เกิน 10 กล่อง/คน) และหาเส้นทางที่ดีที่สุด
 dispatchRouter.post('/optimize', (req: Request, res: Response) => {
   try {
     const plan = routingService.optimizeRoutes();
@@ -19,7 +17,6 @@ dispatchRouter.post('/optimize', (req: Request, res: Response) => {
   }
 });
 
-// GET /api/dispatch/plan - ดูแผนการจัดเส้นทางปัจจุบัน
 dispatchRouter.get('/plan', (req: Request, res: Response) => {
   try {
     const plan = routingService.getCurrentPlan();
@@ -32,7 +29,6 @@ dispatchRouter.get('/plan', (req: Request, res: Response) => {
   }
 });
 
-// GET /api/dispatch/riders - ดูรายชื่อไรเดอร์ทั้งหมด
 dispatchRouter.get('/riders', (req: Request, res: Response) => {
   try {
     const riders = db.getRiders();
@@ -45,7 +41,6 @@ dispatchRouter.get('/riders', (req: Request, res: Response) => {
   }
 });
 
-// GET /api/dispatch/rider/:riderId/sheet - ไรเดอร์เปิดดู "ใบงาน" ของตัวเองผ่านมือถือ
 dispatchRouter.get('/rider/:riderId/sheet', (req: Request, res: Response) => {
   try {
     const riderId = parseInt(req.params.riderId);
@@ -82,7 +77,6 @@ dispatchRouter.get('/rider/:riderId/sheet', (req: Request, res: Response) => {
   }
 });
 
-// PATCH /api/dispatch/stops/:orderId/deliver - ไรเดอร์กดปุ่ม "ส่งสำเร็จ"
 dispatchRouter.patch('/stops/:orderId/deliver', (req: Request, res: Response) => {
   try {
     const orderId = parseInt(req.params.orderId);
@@ -99,7 +93,6 @@ dispatchRouter.patch('/stops/:orderId/deliver', (req: Request, res: Response) =>
   }
 });
 
-// POST /api/dispatch/reset - รีเซ็ตสถานะการจัดส่ง
 dispatchRouter.post('/reset', (req: Request, res: Response) => {
   try {
     const plan = routingService.resetDispatch();

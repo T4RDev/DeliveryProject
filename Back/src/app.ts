@@ -6,17 +6,14 @@ import { dispatchRouter } from './controllers/dispatchController';
 
 export const app: Application = express();
 
-// Middlewares
 app.use(cors({ origin: '*' }));
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
-// Root Redirect to API
 app.get('/', (req: Request, res: Response) => {
   res.redirect('/api');
 });
 
-// API Info / Health Check
 app.get('/api', (req: Request, res: Response) => {
   res.json({
     status: 'online',
@@ -59,7 +56,6 @@ app.get('/api', (req: Request, res: Response) => {
   });
 });
 
-// Register Routers
 app.use('/api/customers', customerRouter);
 app.use('/api/orders', orderRouter);
 app.use('/api/dispatch', dispatchRouter);

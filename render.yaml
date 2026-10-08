@@ -1,4 +1,3 @@
-# Render.com deployment config สำหรับ Backend API
 services:
   - type: web
     name: lunchbox-delivery-backend

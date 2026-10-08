@@ -3,7 +3,6 @@ import { db } from '../db/database';
 
 export const customerRouter = Router();
 
-// GET /api/customers - แสดงข้อมูลลูกค้าทุกคน
 customerRouter.get('/', (req: Request, res: Response) => {
   try {
     const customers = db.getAllCustomers();
@@ -17,7 +16,6 @@ customerRouter.get('/', (req: Request, res: Response) => {
   }
 });
 
-// GET /api/customers/search?q=... - ค้นหาจากชื่อ หรือนามสกุล หรือเบอร์โทร
 customerRouter.get('/search', (req: Request, res: Response) => {
   try {
     const q = (req.query.q as string) || '';
@@ -33,7 +31,6 @@ customerRouter.get('/search', (req: Request, res: Response) => {
   }
 });
 
-// GET /api/customers/phone/:phone - ค้นหาจากเบอร์โทรลูกค้าเก่า
 customerRouter.get('/phone/:phone', (req: Request, res: Response) => {
   try {
     const phone = req.params.phone;
@@ -47,7 +44,6 @@ customerRouter.get('/phone/:phone', (req: Request, res: Response) => {
   }
 });
 
-// GET /api/customers/nearby?lat=...&lng=...&radius=1 - ค้นหาลูกค้าในรัศมีที่กำหนด
 customerRouter.get('/nearby', (req: Request, res: Response) => {
   try {
     const lat = parseFloat(req.query.lat as string);
@@ -74,7 +70,6 @@ customerRouter.get('/nearby', (req: Request, res: Response) => {
   }
 });
 
-// GET /api/customers/:id - แสดงข้อมูลรายบุคคล
 customerRouter.get('/:id', (req: Request, res: Response) => {
   try {
     const id = parseInt(req.params.id);
@@ -88,7 +83,6 @@ customerRouter.get('/:id', (req: Request, res: Response) => {
   }
 });
 
-// POST /api/customers - เพิ่มข้อมูลลูกค้า
 customerRouter.post('/', (req: Request, res: Response) => {
   try {
     const { firstName, lastName, phone, address, latitude, longitude } = req.body;
@@ -118,7 +112,6 @@ customerRouter.post('/', (req: Request, res: Response) => {
   }
 });
 
-// PUT /api/customers/:id - แก้ไขข้อมูลลูกค้า
 customerRouter.put('/:id', (req: Request, res: Response) => {
   try {
     const id = parseInt(req.params.id);
@@ -136,7 +129,6 @@ customerRouter.put('/:id', (req: Request, res: Response) => {
   }
 });
 
-// DELETE /api/customers/:id - ลบข้อมูลลูกค้า
 customerRouter.delete('/:id', (req: Request, res: Response) => {
   try {
     const id = parseInt(req.params.id);
@@ -152,3 +144,4 @@ customerRouter.delete('/:id', (req: Request, res: Response) => {
     res.status(500).json({ success: false, message: 'Internal server error', error });
   }
 });
+
