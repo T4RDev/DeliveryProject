@@ -3,13 +3,85 @@ import { Order } from '../models/Order';
 import { Rider } from '../models/Rider';
 import { DispatchPlan, RiderRoute, RouteStop } from '../models/Route';
 
+interface OsrmLeg {
+  distance: number;
+  duration: number;
+}
+
+interface OsrmRoute {
+  distance: number;
+  duration: number;
+  geometry: {
+    coordinates: [number, number][]; // [lng, lat]
+  };
+  legs: OsrmLeg[];
+}
+
+interface OsrmResponse {
+  code: string;
+  routes?: OsrmRoute[];
+}
+
+/**
+ * ดึงข้อมูลเส้นทางและโครงข่ายถนนจริงผ่าน OSRM (Open Source Routing Machine)
+ * เพื่อให้เส้นทางคำนวณตามแนวถนนจริง ไม่ใช่เส้นตรงเครื่องบิน
+ */
+async function fetchRoadRoute(
+  waypoints: Array<{ latitude: number; longitude: number }>
+): Promise<{
+  polylineCoordinates: [number, number][];
+  legDistancesKm: number[];
+  legDurationsMinutes: number[];
+  totalDistanceKm: number;
+  totalDurationMinutes: number;
+} | null> {
+  if (waypoints.length < 2) return null;
+  try {
+    const coordStr = waypoints.map((w) => `${w.longitude},${w.latitude}`).join(';');
+    const url = `https://router.project-osrm.org/route/v1/driving/${coordStr}?overview=full&geometries=geojson`;
+
+    const controller = new AbortController();
+    const timeout = setTimeout(() => controller.abort(), 7000);
+    const response = await fetch(url, { signal: controller.signal });
+    clearTimeout(timeout);
+
+    if (!response.ok) return null;
+    const data = (await response.json()) as OsrmResponse;
+    if (data.code !== 'Ok' || !data.routes || data.routes.length === 0) return null;
+
+    const route = data.routes[0];
+    // OSRM ส่งกลับมาเป็น [lng, lat] จึงแปลงเป็น [lat, lng] ให้ตรงกับ Leaflet
+    const polylineCoordinates: [number, number][] = route.geometry.coordinates.map(
+      (c) => [c[1], c[0]] as [number, number]
+    );
+
+    const legDistancesKm = (route.legs || []).map(
+      (leg) => Math.round((leg.distance / 1000) * 100) / 100
+    );
+    const legDurationsMinutes = (route.legs || []).map(
+      (leg) => Math.max(1, Math.round(leg.duration / 60))
+    );
+
+    return {
+      polylineCoordinates,
+      legDistancesKm,
+      legDurationsMinutes,
+      totalDistanceKm: Math.round((route.distance / 1000) * 10) / 10,
+      totalDurationMinutes: Math.round(route.duration / 60),
+    };
+  } catch (error) {
+    console.warn('OSRM road route fetch fallback triggered:', error);
+    return null;
+  }
+}
+
 export class RoutingService {
-  optimizeRoutes(): DispatchPlan {
+  async optimizeRoutes(): Promise<DispatchPlan> {
     const orders = db.getAllOrders().filter((o) => o.status !== 'delivered');
     const riders = db.getRiders();
 
     if (orders.length === 0) {
-      return {
+      const emptyPlan: DispatchPlan = {
         planId: `PLAN-${Date.now()}`,
         generatedAt: new Date().toISOString(),
         restaurantLocation: RESTAURANT_DEPOT,
@@ -24,10 +96,13 @@ export class RoutingService {
           estimatedSavedPenaltyBaht: 0,
         },
       };
+      lastDispatchPlan = emptyPlan;
+      return emptyPlan;
     }
 
     const totalBoxes = orders.reduce((sum, o) => sum + o.boxCount, 0);
 
+    // คำนวณมุมเชิงขั้ว (Polar Angle) เพื่อแบ่ง Cluster ตามทิศทางรอบ มมส. ขามเรียง
     const ordersWithAngle = orders.map((order) => {
       const lat = order.customer?.latitude ?? RESTAURANT_DEPOT.latitude;
       const lng = order.customer?.longitude ?? RESTAURANT_DEPOT.longitude;
@@ -43,6 +118,7 @@ export class RoutingService {
 
     ordersWithAngle.sort((a, b) => a.angle - b.angle);
 
+    // จัดกลุ่มตามความจุสูงสุดของไรเดอร์ (ไม่เกิน 10 กล่องต่อคัน)
     const riderClusters: Array<{ orders: Order[]; boxCount: number }> = [];
     let currentClusterOrders: Order[] = [];
     let currentClusterBoxes = 0;
@@ -70,13 +146,11 @@ export class RoutingService {
       });
     }
 
-    const routes: RiderRoute[] = [];
-    let totalSystemDistance = 0;
-    let totalSystemDuration = 0;
-
-    riderClusters.forEach((cluster, idx) => {
+    // ประมวลผลเส้นทางของไรเดอร์แต่ละคันตามโครงข่ายถนนจริง
+    const routePromises = riderClusters.map(async (cluster, idx) => {
       const rider: Rider = riders[idx % riders.length];
 
+      // จัดลำดับจุดส่งด้วย Nearest Neighbor TSP
       let unvisited = [...cluster.orders];
       const orderedOrders: Order[] = [];
       let currentLat = RESTAURANT_DEPOT.latitude;
@@ -103,11 +177,20 @@ export class RoutingService {
         currentLng = nextOrder.customer?.longitude ?? currentLng;
       }
 
-      const stops: RouteStop[] = [];
-      const polylineCoordinates: [number, number][] = [
-        [RESTAURANT_DEPOT.latitude, RESTAURANT_DEPOT.longitude],
+      // พิกัดจุดแวะ: ร้าน -> จุดส่ง 1..N -> ร้าน
+      const waypoints = [
+        { latitude: RESTAURANT_DEPOT.latitude, longitude: RESTAURANT_DEPOT.longitude },
+        ...orderedOrders.map((ord) => ({
+          latitude: ord.customer?.latitude ?? RESTAURANT_DEPOT.latitude,
+          longitude: ord.customer?.longitude ?? RESTAURANT_DEPOT.longitude,
+        })),
+        { latitude: RESTAURANT_DEPOT.latitude, longitude: RESTAURANT_DEPOT.longitude },
       ];
 
+      // ดึงเส้นทางวิ่งจริงตามถนนจาก OSRM
+      const roadRoute = await fetchRoadRoute(waypoints);
+
+      const stops: RouteStop[] = [];
       let lastLat = RESTAURANT_DEPOT.latitude;
       let lastLng = RESTAURANT_DEPOT.longitude;
       let routeDistanceKm = 0;
@@ -116,10 +199,16 @@ export class RoutingService {
       orderedOrders.forEach((ord, stopIdx) => {
         const custLat = ord.customer?.latitude ?? lastLat;
         const custLng = ord.customer?.longitude ?? lastLng;
-        const legDist = calculateDistanceKm(lastLat, lastLng, custLat, custLng);
+
+        // คำนวณระยะทางจริงตามถนน (หาก fallback ใช้ตัวคูณโค้งถนน 1.35)
+        const legDist =
+          roadRoute?.legDistancesKm[stopIdx] ??
+          Math.round(calculateDistanceKm(lastLat, lastLng, custLat, custLng) * 1.35 * 100) / 100;
         routeDistanceKm += legDist;
 
-        const travelMinutes = Math.round(legDist * 2.4);
+        // เวลาวิ่งจริงตามถนน + เผื่อเวลาส่งมอบ 3 นาที
+        const travelMinutes =
+          roadRoute?.legDurationsMinutes[stopIdx] ?? Math.max(1, Math.round(legDist * 2.5));
         accumulatedMinutes += travelMinutes + 3;
 
         const totalMinutesFrom1130 = 30 + accumulatedMinutes;
@@ -132,7 +221,9 @@ export class RoutingService {
           type: 'delivery',
           orderId: ord.id,
           order: ord,
-          customerName: ord.customer ? `${ord.customer.firstName} ${ord.customer.lastName}` : 'ลูกค้าทั่วไป',
+          customerName: ord.customer
+            ? `${ord.customer.firstName} ${ord.customer.lastName}`
+            : 'ลูกค้าทั่วไป',
           phone: ord.customer?.phone || '-',
           address: ord.customer?.address || 'จุดส่งสินค้า',
           latitude: custLat,
@@ -143,28 +234,51 @@ export class RoutingService {
           status: ord.status === 'delivered' ? 'delivered' : 'pending',
         });
 
-        polylineCoordinates.push([custLat, custLng]);
         lastLat = custLat;
         lastLng = custLng;
 
         db.updateOrder(ord.id, { assignedRiderId: rider.id, status: 'assigned' });
       });
 
-      const returnDist = calculateDistanceKm(
-        lastLat,
-        lastLng,
-        RESTAURANT_DEPOT.latitude,
-        RESTAURANT_DEPOT.longitude
-      );
+      // ขากลับจากจุดส่งสุดท้ายกลับร้าน
+      const returnLegIndex = orderedOrders.length;
+      const returnDist =
+        roadRoute?.legDistancesKm[returnLegIndex] ??
+        Math.round(
+          calculateDistanceKm(
+            lastLat,
+            lastLng,
+            RESTAURANT_DEPOT.latitude,
+            RESTAURANT_DEPOT.longitude
+          ) * 1.35 * 100
+        ) / 100;
       routeDistanceKm += returnDist;
-      accumulatedMinutes += Math.round(returnDist * 2.4);
-      polylineCoordinates.push([RESTAURANT_DEPOT.latitude, RESTAURANT_DEPOT.longitude]);
 
-      const roundTripDist = Math.round(routeDistanceKm * 10) / 10;
-      totalSystemDistance += roundTripDist;
-      totalSystemDuration += accumulatedMinutes;
+      const returnTravelMinutes =
+        roadRoute?.legDurationsMinutes[returnLegIndex] ?? Math.max(1, Math.round(returnDist * 2.5));
+      accumulatedMinutes += returnTravelMinutes;
 
-      routes.push({
+      // เส้น Polyline เลี้ยวตามถนนจริงในแผนที่
+      const polylineCoordinates: [number, number][] =
+        roadRoute && roadRoute.polylineCoordinates.length > 0
+          ? roadRoute.polylineCoordinates
+          : [
+              [RESTAURANT_DEPOT.latitude, RESTAURANT_DEPOT.longitude],
+              ...orderedOrders.map(
+                (o) =>
+                  [
+                    o.customer?.latitude ?? RESTAURANT_DEPOT.latitude,
+                    o.customer?.longitude ?? RESTAURANT_DEPOT.longitude,
+                  ] as [number, number]
+              ),
+              [RESTAURANT_DEPOT.latitude, RESTAURANT_DEPOT.longitude],
+            ];
+
+      const roundTripDist = roadRoute
+        ? roadRoute.totalDistanceKm
+        : Math.round(routeDistanceKm * 10) / 10;
+
+      return {
         riderId: rider.id,
         rider,
         totalBoxes: cluster.boxCount,
@@ -175,8 +289,13 @@ export class RoutingService {
         polylineCoordinates,
         isOverCapacity: cluster.boxCount > 10,
         isLateRisk: accumulatedMinutes > 60,
-      });
+      } as RiderRoute;
     });
+
+    const routes: RiderRoute[] = await Promise.all(routePromises);
+
+    const totalSystemDistance = routes.reduce((sum, r) => sum + r.totalDistanceKm, 0);
+    const totalSystemDuration = routes.reduce((sum, r) => sum + r.estimatedDurationMinutes, 0);
 
     const plan: DispatchPlan = {
       planId: `DISPATCH-${Date.now()}`,
@@ -199,9 +318,9 @@ export class RoutingService {
     return plan;
   }
 
-  getCurrentPlan(): DispatchPlan | null {
+  async getCurrentPlan(): Promise<DispatchPlan | null> {
     if (!lastDispatchPlan) {
-      return this.optimizeRoutes();
+      return await this.optimizeRoutes();
     }
     return lastDispatchPlan;
   }
@@ -224,7 +343,7 @@ export class RoutingService {
     return !!updated;
   }
 
-  resetDispatch(): DispatchPlan {
+  async resetDispatch(): Promise<DispatchPlan> {
     const orders = db.getAllOrders();
     for (const ord of orders) {
       db.updateOrder(ord.id, {
@@ -233,7 +352,7 @@ export class RoutingService {
         deliveredAt: undefined,
       });
     }
-    return this.optimizeRoutes();
+    return await this.optimizeRoutes();
   }
 }
 
