@@ -419,22 +419,54 @@ export class App implements OnInit, AfterViewInit {
       .addTo(this.riderModalMap)
       .openPopup();
 
-    L.polyline([
-      [depotLat, depotLng],
-      [stop.latitude, stop.longitude]
-    ], {
-      color: '#EA580C',
-      weight: 5,
-      dashArray: '6, 6',
-      opacity: 0.9,
-    }).addTo(this.riderModalMap);
+    // ดึงเส้นทางขับขี่ตามถนนจริงไปยังจุดส่ง (OSRM)
+    const osrmUrl = `https://router.project-osrm.org/route/v1/driving/${depotLng},${depotLat};${stop.longitude},${stop.latitude}?overview=full&geometries=geojson`;
+    fetch(osrmUrl)
+      .then((res) => res.json())
+      .then((data) => {
+        if (!this.riderModalMap) return;
+        if (data?.code === 'Ok' && data.routes?.[0]?.geometry?.coordinates?.length) {
+          const roadPoints: [number, number][] = data.routes[0].geometry.coordinates.map(
+            (pt: [number, number]) => [pt[1], pt[0]]
+          );
+          L.polyline(roadPoints, {
+            color: '#EA580C',
+            weight: 5,
+            opacity: 0.9,
+          }).addTo(this.riderModalMap);
+          this.riderModalMap.fitBounds(L.latLngBounds(roadPoints), { padding: [40, 40] });
+        } else {
+          this.drawFallbackModalPolyline(depotLat, depotLng, stop);
+        }
+      })
+      .catch(() => {
+        if (this.riderModalMap) {
+          this.drawFallbackModalPolyline(depotLat, depotLng, stop);
+        }
+      });
 
+    setTimeout(() => this.riderModalMap?.invalidateSize(), 150);
+  }
+
+  private drawFallbackModalPolyline(depotLat: number, depotLng: number, stop: RouteStop) {
+    if (!this.riderModalMap) return;
+    L.polyline(
+      [
+        [depotLat, depotLng],
+        [stop.latitude, stop.longitude],
+      ],
+      {
+        color: '#EA580C',
+        weight: 5,
+        dashArray: '6, 6',
+        opacity: 0.9,
+      }
+    ).addTo(this.riderModalMap);
     const bounds = L.latLngBounds([
       [depotLat, depotLng],
-      [stop.latitude, stop.longitude]
+      [stop.latitude, stop.longitude],
     ]);
     this.riderModalMap.fitBounds(bounds, { padding: [40, 40] });
-    setTimeout(() => this.riderModalMap?.invalidateSize(), 150);
   }
 
   private initMap() {

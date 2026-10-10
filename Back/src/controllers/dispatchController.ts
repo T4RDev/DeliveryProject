@@ -1,15 +1,15 @@
 import { Request, Response, Router } from 'express';
-import { db, RESTAURANT_DEPOT } from '../db/database';
+import { db } from '../db/database';
 import { routingService } from '../services/routingService';
 
 export const dispatchRouter = Router();
 
-dispatchRouter.post('/optimize', (req: Request, res: Response) => {
+dispatchRouter.post('/optimize', async (req: Request, res: Response) => {
   try {
-    const plan = routingService.optimizeRoutes();
+    const plan = await routingService.optimizeRoutes();
     res.json({
       success: true,
-      message: 'จัดเส้นทางและแบ่งงานไรเดอร์อัจฉริยะสำเร็จ',
+      message: 'จัดเส้นทางและแบ่งงานไรเดอร์อัจฉริยะตามถนนจริงสำเร็จ',
       data: plan,
     });
   } catch (error) {
@@ -17,9 +17,9 @@ dispatchRouter.post('/optimize', (req: Request, res: Response) => {
   }
 });
 
-dispatchRouter.get('/plan', (req: Request, res: Response) => {
+dispatchRouter.get('/plan', async (req: Request, res: Response) => {
   try {
-    const plan = routingService.getCurrentPlan();
+    const plan = await routingService.getCurrentPlan();
     res.json({
       success: true,
       data: plan,
@@ -41,10 +41,10 @@ dispatchRouter.get('/riders', (req: Request, res: Response) => {
   }
 });
 
-dispatchRouter.get('/rider/:riderId/sheet', (req: Request, res: Response) => {
+dispatchRouter.get('/rider/:riderId/sheet', async (req: Request, res: Response) => {
   try {
     const riderId = parseInt(req.params.riderId);
-    const plan = routingService.getCurrentPlan();
+    const plan = await routingService.getCurrentPlan();
     if (!plan) {
       return res.status(404).json({ success: false, message: 'ยังไม่มีแผนการจัดเส้นทางในขณะนี้' });
     }
@@ -93,9 +93,9 @@ dispatchRouter.patch('/stops/:orderId/deliver', (req: Request, res: Response) =>
   }
 });
 
-dispatchRouter.post('/reset', (req: Request, res: Response) => {
+dispatchRouter.post('/reset', async (req: Request, res: Response) => {
   try {
-    const plan = routingService.resetDispatch();
+    const plan = await routingService.resetDispatch();
     res.json({
       success: true,
       message: 'รีเซ็ตสถานะการจัดส่งเรียบร้อยแล้ว',
