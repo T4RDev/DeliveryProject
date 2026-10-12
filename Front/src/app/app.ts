@@ -2,7 +2,7 @@ import { Component, OnInit, AfterViewInit, inject, signal } from '@angular/core'
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { ApiService } from './services/api.service';
-import { Customer, Order, Rider, DispatchPlan, RiderSheetData, RiderRoute, RouteStop } from './models/delivery.model';
+import { Customer, Order, Rider, DispatchPlan, RiderSheetData, RiderRoute, RouteStop, MsuLandmark } from './models/delivery.model';
 import * as L from 'leaflet';
 
 @Component({
@@ -30,11 +30,15 @@ export class App implements OnInit, AfterViewInit {
   riders = signal<Rider[]>([]);
   dispatchPlan = signal<DispatchPlan | null>(null);
 
+  msuLandmarks = signal<MsuLandmark[]>([]);
+  selectedLandmarkName = signal<string>('คณะเทคโนโลยีสารสนเทศ (IT MSU)');
+
   selectedRiderId = signal<number>(1);
   currentRiderSheet = signal<RiderSheetData | null>(null);
 
   activeStopForMap = signal<RouteStop | null>(null);
   private riderModalMap: L.Map | null = null;
+  private orderPinMarker: L.Marker | null = null;
 
   customerSearchQuery = '';
   searchPhoneQuery = '';
@@ -44,9 +48,9 @@ export class App implements OnInit, AfterViewInit {
     firstName: '',
     lastName: '',
     phone: '',
-    address: '',
-    latitude: 16.2443,
-    longitude: 103.2504,
+    address: 'คณะเทคโนโลยีสารสนเทศ (IT MSU) มหาวิทยาลัยมหาสารคาม ขามเรียง',
+    latitude: 16.2405,
+    longitude: 103.2585,
     boxCount: 2,
     note: 'มื้อเที่ยงส่งด่วน มมส.',
   };
@@ -58,6 +62,7 @@ export class App implements OnInit, AfterViewInit {
 
   ngOnInit() {
     this.checkBackendAndLoadData();
+    this.loadMsuLandmarks();
   }
 
   ngAfterViewInit() {
@@ -206,8 +211,8 @@ export class App implements OnInit, AfterViewInit {
         this.newOrderForm.lastName = c.lastName;
         this.newOrderForm.phone = c.phone;
         this.newOrderForm.address = c.address;
-        this.newOrderForm.latitude = c.latitude;
-        this.newOrderForm.longitude = c.longitude;
+        this.newOrderForm.latitude = c.latitude ?? 16.2405;
+        this.newOrderForm.longitude = c.longitude ?? 103.2585;
         this.phoneLookupResult.set(`พบลูกค้าเก่า: คุณ${c.firstName} ${c.lastName}`);
         this.showAlert('success', `พบข้อมูลลูกค้าเก่า: คุณ${c.firstName} ${c.lastName} ระบบกรอกข้อมูลให้อัตโนมัติ`);
       },
@@ -217,11 +222,69 @@ export class App implements OnInit, AfterViewInit {
     });
   }
 
-  generateRandomLocation() {
-    const angle = Math.random() * 2 * Math.PI;
-    const distanceOffset = 0.002 + Math.random() * 0.010;
-    this.newOrderForm.latitude = Math.round((this.MSU_LAT + Math.sin(angle) * distanceOffset) * 1000000) / 1000000;
-    this.newOrderForm.longitude = Math.round((this.MSU_LNG + Math.cos(angle) * distanceOffset * 1.05) * 1000000) / 1000000;
+  loadMsuLandmarks() {
+    this.api.getMsuLandmarks().subscribe({
+      next: (res) => this.msuLandmarks.set(res.data),
+    });
+  }
+
+  onSelectLandmark(landmarkName: string) {
+    const lm = this.msuLandmarks().find((item) => item.name === landmarkName);
+    if (!lm) return;
+    this.selectedLandmarkName.set(lm.name);
+    this.newOrderForm.address = lm.address;
+    this.newOrderForm.latitude = lm.latitude;
+    this.newOrderForm.longitude = lm.longitude;
+    this.updateOrderPinOnMap(lm.latitude, lm.longitude, lm.name);
+    if (this.map) {
+      this.map.panTo([lm.latitude, lm.longitude]);
+    }
+  }
+
+  pickRandomMsuLocation() {
+    const list = this.msuLandmarks();
+    if (!list || list.length === 0) return;
+    const randomItem = list[Math.floor(Math.random() * list.length)];
+    this.onSelectLandmark(randomItem.name);
+    this.showAlert('info', `สุ่มเลือกสถานที่จริง: ${randomItem.name}`);
+  }
+
+  updateOrderPinOnMap(lat: number, lng: number, label: string) {
+    if (!this.map) return;
+    if (this.orderPinMarker) {
+      this.orderPinMarker.setLatLng([lat, lng]);
+      this.orderPinMarker.setPopupContent(`<b>จุดส่งที่เลือก:</b><br>${label}`);
+    } else {
+      const pinIcon = L.divIcon({
+        html: `<div class="flex items-center justify-center w-8 h-8 bg-blue-600 text-white rounded-full text-xs font-bold border-2 border-white shadow-lg animate-bounce">📍</div>`,
+        className: 'custom-pin-marker',
+        iconSize: [32, 32],
+        iconAnchor: [16, 32],
+      });
+      this.orderPinMarker = L.marker([lat, lng], { icon: pinIcon }).addTo(this.map);
+      this.orderPinMarker.bindPopup(`<b>จุดส่งที่เลือก:</b><br>${label}`);
+    }
+    this.orderPinMarker.openPopup();
+  }
+
+  setOrderLocationFromMap(lat: number, lng: number) {
+    const cleanLat = Math.round(lat * 1000000) / 1000000;
+    const cleanLng = Math.round(lng * 1000000) / 1000000;
+    this.newOrderForm.latitude = cleanLat;
+    this.newOrderForm.longitude = cleanLng;
+
+    const closest = this.msuLandmarks().find(
+      (lm) => Math.abs(lm.latitude - cleanLat) < 0.0018 && Math.abs(lm.longitude - cleanLng) < 0.0018
+    );
+    if (closest) {
+      this.newOrderForm.address = closest.address;
+      this.selectedLandmarkName.set(closest.name);
+    } else {
+      this.newOrderForm.address = `จุดจัดส่งบนแผนที่ มมส. ขามเรียง`;
+      this.selectedLandmarkName.set('');
+    }
+    this.updateOrderPinOnMap(cleanLat, cleanLng, this.newOrderForm.address);
+    this.showAlert('info', `เลือกจุดส่งบนแผนที่: ${this.newOrderForm.address}`);
   }
 
   submitNewOrder() {
@@ -493,6 +556,11 @@ export class App implements OnInit, AfterViewInit {
 
     this.routeLayers = L.layerGroup().addTo(this.map);
     this.renderRoutesOnMap();
+
+    // คลิกเลือกจุดส่งบนแผนที่
+    this.map.on('click', (e: L.LeafletMouseEvent) => {
+      this.setOrderLocationFromMap(e.latlng.lat, e.latlng.lng);
+    });
 
     setTimeout(() => {
       this.map?.invalidateSize();

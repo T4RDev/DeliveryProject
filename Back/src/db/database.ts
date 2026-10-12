@@ -2,12 +2,38 @@ import { Customer } from '../models/Customer';
 import { Order } from '../models/Order';
 import { Rider } from '../models/Rider';
 
+export interface MsuLandmark {
+  name: string;
+  category: string;
+  address: string;
+  latitude: number;
+  longitude: number;
+}
+
 export const RESTAURANT_DEPOT = {
   name: 'ร้านส่งด่วนมื้อเที่ยง (ตลาดน้อย มมส.)',
   address: 'ศูนย์อาหารตลาดน้อย มหาวิทยาลัยมหาสารคาม (มมส. ขามเรียง) ตำบลขามเรียง อำเภอกันทรวิชัย จังหวัดมหาสารคาม',
   latitude: 16.2435,
   longitude: 103.2545,
 };
+
+export const MSU_LANDMARKS: MsuLandmark[] = [
+  { name: 'คณะเทคโนโลยีสารสนเทศ (IT MSU)', category: 'คณะ', address: 'คณะเทคโนโลยีสารสนเทศ (IT MSU) มหาวิทยาลัยมหาสารคาม ขามเรียง', latitude: 16.2405, longitude: 103.2585 },
+  { name: 'อาคารวิทยบริการ (หอสมุดกลาง มมส.)', category: 'อาคารกลาง', address: 'อาคารวิทยบริการ (หอสมุดกลาง มมส.) ขามเรียง', latitude: 16.2486, longitude: 103.2563 },
+  { name: 'อาคารบรมราชกุมารี (สนง.อธิการบดี)', category: 'อาคารกลาง', address: 'อาคารบรมราชกุมารี สำนักงานอธิการบดี มหาวิทยาลัยมหาสารคาม', latitude: 16.2477, longitude: 103.2514 },
+  { name: 'คณะการบัญชีและการจัดการ (MBS)', category: 'คณะ', address: 'คณะการบัญชีและการจัดการ (MBS) มหาวิทยาลัยมหาสารคาม ขามเรียง', latitude: 16.2420, longitude: 103.2510 },
+  { name: 'คณะวิศวกรรมศาสตร์ มมส.', category: 'คณะ', address: 'คณะวิศวกรรมศาสตร์ มหาวิทยาลัยมหาสารคาม ขามเรียง', latitude: 16.2383, longitude: 103.2577 },
+  { name: 'ตึกสิริวิทย์ คณะศึกษาศาสตร์', category: 'คณะ', address: 'ตึกสิริวิทย์ คณะศึกษาศาสตร์ มหาวิทยาลัยมหาสารคาม ขามเรียง', latitude: 16.2470, longitude: 103.2570 },
+  { name: 'ศูนย์อาหารกลาง (Complex มมส.)', category: 'ร้านอาหาร/ส่วนกลาง', address: 'ศูนย์อาหารกลาง (Complex มมส.) มหาวิทยาลัยมหาสารคาม ขามเรียง', latitude: 16.2473, longitude: 103.2607 },
+  { name: 'โรงพยาบาลสุทธาเวช มมส.', category: 'โรงพยาบาล', address: 'โรงพยาบาลสุทธาเวช คณะแพทยศาสตร์ มหาวิทยาลัยมหาสารคาม', latitude: 16.2495, longitude: 103.2497 },
+  { name: 'คณะมนุษยศาสตร์และสังคมศาสตร์', category: 'คณะ', address: 'คณะมนุษยศาสตร์และสังคมศาสตร์ มหาวิทยาลัยมหาสารคาม ขามเรียง', latitude: 16.2455, longitude: 103.2530 },
+  { name: 'คณะสาธารณสุขศาสตร์ มมส.', category: 'คณะ', address: 'คณะสาธารณสุขศาสตร์ มหาวิทยาลัยมหาสารคาม ขามเรียง', latitude: 16.2410, longitude: 103.2560 },
+  { name: 'หอพักสุขสบาย ซอยวุ่นวาย ขามเรียง', category: 'หอพัก', address: 'หอพักสุขสบาย ซอยวุ่นวาย ตำบลขามเรียง อำเภอกันทรวิชัย', latitude: 16.2390, longitude: 103.2503 },
+  { name: 'คอนโดเดอะพาร์ค มมส.', category: 'หอพัก/คอนโด', address: 'คอนโดเดอะพาร์ค มมส. ตำบลขามเรียง อำเภอกันทรวิชัย', latitude: 16.2457, longitude: 103.2490 },
+  { name: 'หอพักอินเตอร์ มมส. ขามเรียง', category: 'หอพัก', address: 'หอพักอินเตอร์ มมส. ตำบลขามเรียง อำเภอกันทรวิชัย', latitude: 16.2399, longitude: 103.2485 },
+  { name: 'หอพักชื่นชม มมส.', category: 'หอพัก', address: 'หอพักชื่นชม หลัง มมส. ขามเรียง อำเภอกันทรวิชัย', latitude: 16.2465, longitude: 103.2480 },
+  { name: 'ศูนย์อาหารตลาดน้อย มมส. (จุดตั้งร้าน)', category: 'ร้านอาหาร/ส่วนกลาง', address: 'ศูนย์อาหารตลาดน้อย มหาวิทยาลัยมหาสารคาม (มมส. ขามเรียง)', latitude: 16.2435, longitude: 103.2545 },
+];
 
 export function calculateDistanceKm(
   lat1: number,
@@ -60,18 +86,59 @@ export class Database {
     return this.riders.find((r) => r.id === id);
   }
 
+  getMsuLandmarks(): MsuLandmark[] {
+    return MSU_LANDMARKS;
+  }
+
+  /**
+   * ค้นหาพิกัดแผนที่จริงใน มมส. โดยอ้างอิงจากชื่อสถานที่หรือที่อยู่จริง
+   */
+  resolveAddressLocation(address: string): { latitude: number; longitude: number } {
+    const clean = address.trim().toLowerCase();
+    for (const lm of MSU_LANDMARKS) {
+      if (
+        clean.includes(lm.name.toLowerCase()) ||
+        clean.includes(lm.address.toLowerCase()) ||
+        lm.name.toLowerCase().includes(clean)
+      ) {
+        return { latitude: lm.latitude, longitude: lm.longitude };
+      }
+    }
+
+    if (clean.includes('it') || clean.includes('สารสนเทศ')) return { latitude: 16.2405, longitude: 103.2585 };
+    if (clean.includes('วิศว') || clean.includes('en')) return { latitude: 16.2383, longitude: 103.2577 };
+    if (clean.includes('ศึกษา') || clean.includes('สิริวิทย์')) return { latitude: 16.2470, longitude: 103.2570 };
+    if (clean.includes('อธิการ') || clean.includes('บรมราช')) return { latitude: 16.2477, longitude: 103.2514 };
+    if (clean.includes('หอสมุด') || clean.includes('วิทยบริการ')) return { latitude: 16.2486, longitude: 103.2563 };
+    if (clean.includes('complex') || clean.includes('คอมเพล็กซ์')) return { latitude: 16.2473, longitude: 103.2607 };
+    if (clean.includes('mbs') || clean.includes('บัญชี')) return { latitude: 16.2420, longitude: 103.2510 };
+    if (clean.includes('สุทธาเวช') || clean.includes('แพทย์') || clean.includes('โรงพยาบาล')) return { latitude: 16.2495, longitude: 103.2497 };
+    if (clean.includes('วุ่นวาย')) return { latitude: 16.2390, longitude: 103.2503 };
+    if (clean.includes('เดอะพาร์ค')) return { latitude: 16.2457, longitude: 103.2490 };
+
+    let hash = 0;
+    for (let i = 0; i < address.length; i++) hash = (hash << 5) - hash + address.charCodeAt(i);
+    const angle = Math.abs(hash) % 360;
+    const rad = (angle * Math.PI) / 180;
+    const dist = 0.003 + (Math.abs(hash >> 3) % 40) * 0.0001;
+    return {
+      latitude: Math.round((RESTAURANT_DEPOT.latitude + Math.sin(rad) * dist) * 1000000) / 1000000,
+      longitude: Math.round((RESTAURANT_DEPOT.longitude + Math.cos(rad) * dist) * 1000000) / 1000000,
+    };
+  }
+
   private seedInitialCustomers() {
     const rawCustomers = [
-      { firstName: 'สมชาย', lastName: 'มีโชคดี', phone: '089-123-4567', address: 'ตึกสิริวิทย์ คณะศึกษาศาสตร์ มมส.', latOffset: 0.0035, lngOffset: 0.0025 },
-      { firstName: 'นงนุช', lastName: 'แสนสุข', phone: '081-987-6543', address: 'อาคารบรมราชกุมารี สำนักงานอธิการบดี มมส.', latOffset: 0.0042, lngOffset: -0.0031 },
-      { firstName: 'กิตติพงษ์', lastName: 'วรดิลก', phone: '086-555-1234', address: 'คณะเทคโนโลยีสารสนเทศ (IT MSU)', latOffset: -0.0030, lngOffset: 0.0040 },
-      { firstName: 'ศิริพร', lastName: 'สุขใจ', phone: '087-444-9876', address: 'อาคารวิทยบริการ (หอสมุดกลาง มมส.)', latOffset: 0.0051, lngOffset: 0.0018 },
-      { firstName: 'ธีรเดช', lastName: 'เจริญผล', phone: '082-333-7890', address: 'หอพักสุขสบาย ซอยวุ่นวาย ขามเรียง', latOffset: -0.0045, lngOffset: -0.0042 },
-      { firstName: 'พิมพา', lastName: 'จิตรจำนงค์', phone: '085-111-4567', address: 'คอนโดเดอะพาร์ค มมส. ชั้น 4', latOffset: 0.0022, lngOffset: -0.0055 },
-      { firstName: 'อนุสรณ์', lastName: 'เกียรติขจร', phone: '084-222-8765', address: 'คณะวิศวกรรมศาสตร์ มมส.', latOffset: -0.0052, lngOffset: 0.0032 },
-      { firstName: 'สุดารัตน์', lastName: 'เลิศวิไล', phone: '083-777-6543', address: 'ศูนย์อาหารกลาง (Complex มมส.)', latOffset: 0.0038, lngOffset: 0.0062 },
-      { firstName: 'ปกรณ์', lastName: 'ทองหล่อ', phone: '088-999-3210', address: 'หอพักอินเตอร์ มมส. ขามเรียง', latOffset: -0.0036, lngOffset: -0.0060 },
-      { firstName: 'วราภรณ์', lastName: 'คงมั่น', phone: '089-666-4321', address: 'โรงพยาบาลสุทธาเวช มมส.', latOffset: 0.0060, lngOffset: -0.0048 },
+      { firstName: 'สมชาย', lastName: 'มีโชคดี', phone: '089-123-4567', landmark: MSU_LANDMARKS[5] },
+      { firstName: 'นงนุช', lastName: 'แสนสุข', phone: '081-987-6543', landmark: MSU_LANDMARKS[2] },
+      { firstName: 'กิตติพงษ์', lastName: 'วรดิลก', phone: '086-555-1234', landmark: MSU_LANDMARKS[0] },
+      { firstName: 'ศิริพร', lastName: 'สุขใจ', phone: '087-444-9876', landmark: MSU_LANDMARKS[1] },
+      { firstName: 'ธีรเดช', lastName: 'เจริญผล', phone: '082-333-7890', landmark: MSU_LANDMARKS[10] },
+      { firstName: 'พิมพา', lastName: 'จิตรจำนงค์', phone: '085-111-4567', landmark: MSU_LANDMARKS[11] },
+      { firstName: 'อนุสรณ์', lastName: 'เกียรติขจร', phone: '084-222-8765', landmark: MSU_LANDMARKS[4] },
+      { firstName: 'สุดารัตน์', lastName: 'เลิศวิไล', phone: '083-777-6543', landmark: MSU_LANDMARKS[6] },
+      { firstName: 'ปกรณ์', lastName: 'ทองหล่อ', phone: '088-999-3210', landmark: MSU_LANDMARKS[12] },
+      { firstName: 'วราภรณ์', lastName: 'คงมั่น', phone: '089-666-4321', landmark: MSU_LANDMARKS[7] },
     ];
 
     for (const c of rawCustomers) {
@@ -80,9 +147,9 @@ export class Database {
         firstName: c.firstName,
         lastName: c.lastName,
         phone: c.phone,
-        address: c.address,
-        latitude: Math.round((RESTAURANT_DEPOT.latitude + c.latOffset) * 1000000) / 1000000,
-        longitude: Math.round((RESTAURANT_DEPOT.longitude + c.lngOffset) * 1000000) / 1000000,
+        address: c.landmark.address,
+        latitude: c.landmark.latitude,
+        longitude: c.landmark.longitude,
         createdAt: new Date().toISOString(),
       });
     }
@@ -117,21 +184,30 @@ export class Database {
     return this.customers
       .map((c) => ({
         ...c,
-        distanceKm: calculateDistanceKm(lat, lng, c.latitude, c.longitude),
+        distanceKm: calculateDistanceKm(lat, lng, c.latitude ?? RESTAURANT_DEPOT.latitude, c.longitude ?? RESTAURANT_DEPOT.longitude),
       }))
       .filter((c) => c.distanceKm <= radiusKm)
       .sort((a, b) => a.distanceKm - b.distanceKm);
   }
 
   createCustomer(data: Omit<Customer, 'id' | 'createdAt' | 'updatedAt'>): Customer {
+    let lat = data.latitude;
+    let lng = data.longitude;
+
+    if (lat === undefined || lng === undefined) {
+      const resolved = this.resolveAddressLocation(data.address);
+      lat = resolved.latitude;
+      lng = resolved.longitude;
+    }
+
     const newCustomer: Customer = {
       id: this.nextCustomerId++,
       firstName: data.firstName,
       lastName: data.lastName,
       phone: data.phone,
       address: data.address,
-      latitude: data.latitude,
-      longitude: data.longitude,
+      latitude: lat,
+      longitude: lng,
       createdAt: new Date().toISOString(),
     };
     this.customers.push(newCustomer);
@@ -157,31 +233,22 @@ export class Database {
     return this.customers.length < initialLen;
   }
 
-
   getAllOrders(query?: string): Order[] {
-    let result = this.orders.map((o) => ({
+    const list = this.orders.map((o) => ({
       ...o,
       customer: this.getCustomerById(o.customerId),
     }));
-
-    if (query && query.trim()) {
-      const q = query.trim().toLowerCase();
-      result = result.filter((o) => {
-        const custName = o.customer ? `${o.customer.firstName} ${o.customer.lastName}`.toLowerCase() : '';
-        const phone = o.customer ? o.customer.phone : '';
-        const address = o.customer ? o.customer.address.toLowerCase() : '';
-        const note = o.note ? o.note.toLowerCase() : '';
-        return (
-          custName.includes(q) ||
-          phone.includes(q) ||
-          address.includes(q) ||
-          note.includes(q) ||
-          String(o.id).includes(q)
-        );
-      });
-    }
-
-    return result;
+    if (!query || !query.trim()) return list;
+    const q = query.trim().toLowerCase();
+    return list.filter(
+      (o) =>
+        o.id.toString() === q ||
+        o.customer?.firstName.toLowerCase().includes(q) ||
+        o.customer?.lastName.toLowerCase().includes(q) ||
+        o.customer?.phone.includes(q) ||
+        o.customer?.address.toLowerCase().includes(q) ||
+        (o.note && o.note.toLowerCase().includes(q))
+    );
   }
 
   getOrderById(id: number): Order | undefined {
@@ -194,37 +261,47 @@ export class Database {
   }
 
   createOrder(data: { customerId: number; boxCount: number; note?: string }): Order {
-    const safeBoxCount = Math.min(Math.max(1, data.boxCount || 1), 3);
-    const order: Order = {
+    const orderTime = new Date();
+    const timeString = `${String(orderTime.getHours()).padStart(2, '0')}:${String(
+      orderTime.getMinutes()
+    ).padStart(2, '0')}:${String(orderTime.getSeconds()).padStart(2, '0')}`;
+
+    const newOrder: Order = {
       id: this.nextOrderId++,
       customerId: data.customerId,
-      boxCount: safeBoxCount,
-      orderTime: '10:45:00',
+      boxCount: data.boxCount,
+      orderTime: timeString,
       deliveryDeadline: '12:30:00',
       status: 'pending',
-      note: data.note || '',
+      note: data.note || 'มื้อเที่ยงส่งด่วน มมส.',
     };
-    this.orders.push(order);
+    this.orders.push(newOrder);
     return {
-      ...order,
-      customer: this.getCustomerById(order.customerId),
+      ...newOrder,
+      customer: this.getCustomerById(newOrder.customerId),
     };
   }
 
-  updateOrder(id: number, data: Partial<Order>): Order | null {
+  updateOrder(
+    id: number,
+    data: {
+      boxCount?: number;
+      status?: 'pending' | 'assigned' | 'in_transit' | 'delivered' | 'cancelled';
+      assignedRiderId?: number;
+      deliveredAt?: string;
+      note?: string;
+    }
+  ): Order | null {
     const index = this.orders.findIndex((o) => o.id === id);
     if (index === -1) return null;
-
-    if (data.boxCount !== undefined) {
-      data.boxCount = Math.min(Math.max(1, data.boxCount), 3);
-    }
-
     this.orders[index] = {
       ...this.orders[index],
       ...data,
-      id,
     };
-    return this.getOrderById(id) || null;
+    return {
+      ...this.orders[index],
+      customer: this.getCustomerById(this.orders[index].customerId),
+    };
   }
 
   deleteOrder(id: number): boolean {
@@ -233,52 +310,24 @@ export class Database {
     return this.orders.length < initialLen;
   }
 
-  getOrdersNearby(lat: number, lng: number, radiusKm: number): Array<Order & { distanceKm: number }> {
-    return this.getAllOrders()
-      .map((o) => {
-        const custLat = o.customer ? o.customer.latitude : RESTAURANT_DEPOT.latitude;
-        const custLng = o.customer ? o.customer.longitude : RESTAURANT_DEPOT.longitude;
-        const dist = calculateDistanceKm(lat, lng, custLat, custLng);
-        return {
-          ...o,
-          distanceKm: dist,
-        };
-      })
-      .filter((o) => o.distanceKm <= radiusKm)
-      .sort((a, b) => a.distanceKm - b.distanceKm);
+  getOrdersNearby(centerLat: number, centerLng: number, radiusKm: number): Order[] {
+    return this.getAllOrders().filter((o) => {
+      const custLat = o.customer?.latitude ?? RESTAURANT_DEPOT.latitude;
+      const custLng = o.customer?.longitude ?? RESTAURANT_DEPOT.longitude;
+      const dist = calculateDistanceKm(centerLat, centerLng, custLat, custLng);
+      return dist <= radiusKm;
+    });
   }
 
   generateMockOrders(count = 24): Order[] {
-    this.clearOrders();
-
-    const firstNames = ['สมชาย', 'สมพร', 'วิภา', 'อรทัย', 'ชาญชัย', 'พรทิพย์', 'ณัฐวุฒิ', 'ศุภชัย', 'กาญจนา', 'ธนากร', 'ประวิทย์', 'สุภาพร', 'เอกชัย', 'มณีรัตน์', 'เฉลิมชัย', 'จารุวรรณ', 'ชลธิชา', 'ธีระพงษ์', 'ปิยะมาศ', 'วรวิทย์', 'อภิสิทธิ์', 'ดวงใจ', 'สุรชัย', 'ทิพวรรณ'];
-    const lastNames = ['วงศ์สวัสดิ์', 'เจริญสุข', 'ศรีวิไล', 'บุญชู', 'รัตนโกสินทร์', 'พานิชย์เจริญ', 'เกษมสันต์', 'คงเจริญ', 'มั่นคง', 'ศรีสุข', 'สิทธิโชค', 'วัฒนพาณิชย์'];
-
-    const msuLocations = [
-      'ตึกสิริวิทย์ คณะศึกษาศาสตร์ มมส.',
-      'อาคารบรมราชกุมารี (สำนักงานอธิการบดี มมส.)',
-      'คณะเทคโนโลยีสารสนเทศ (IT MSU)',
-      'อาคารวิทยบริการ (หอสมุดกลาง มมส.)',
-      'ศูนย์อาหารกลาง Complex มมส.',
-      'หอพักสุขสบาย ซอยวุ่นวาย ขามเรียง',
-      'คอนโดเดอะพาร์ค มมส. ขามเรียง',
-      'หอพักบุญฑริก มมส. ขามเรียง',
-      'คณะวิศวกรรมศาสตร์ มมส.',
-      'หอพักเจริญผล ขามเรียง ซอย 3',
-      'อาคารปฏิบัติการกลางวิทยาศาสตร์ มมส.',
-      'โรงพยาบาลสุทธาเวช มมส.',
-      'หอพักตักศิลา มมส. ขามเรียง',
-      'หอพักชิดชนก ซอยวุ่นวาย',
-      'คณะเภสัชศาสตร์ มมส.',
-      'อาคารพลศึกษา มมส.',
-      'หอพักใน มมส. ขามเรียง ตึก 2',
-      'สำนักคอมพิวเตอร์ มมส.',
-      'ประตู มมส. ฝั่งขามเรียง',
-      'คณะมนุษยศาสตร์และสังคมศาสตร์ มมส.',
-      'หมู่บ้านเสริมไทยธานี มมส.',
-      'หอพักแกรนด์โฮม ขามเรียง',
-      'คลินิกเวชกรรม มมส.',
-      'อาคารบริการวิชาการ มมส.'
+    const firstNames = [
+      'สมชาย', 'วิภา', 'ธนากร', 'ศิริรัตน์', 'อานนท์', 'พรทิพย์',
+      'ณัฐวุฒิ', 'กัญญารัตน์', 'พีรพล', 'ลลิตา', 'ปิยะ', 'สุพัตรา',
+      'ชนาธิป', 'วรรณภา', 'เอกราช', 'จิดาภา', 'ธีระ', 'ภัทราภรณ์'
+    ];
+    const lastNames = [
+      'มีสุข', 'บุญชู', 'วงษ์สุวรรณ', 'ทองดี', 'รัตนโกสินทร์', 'ศรีสวัสดิ์',
+      'เจริญกุล', 'ตั้งตรงจิตร', 'คงกระพัน', 'สมบูรณ์', 'ทรัพย์เจริญ'
     ];
 
     const generatedOrders: Order[] = [];
@@ -287,25 +336,15 @@ export class Database {
       const fName = firstNames[i % firstNames.length];
       const lName = lastNames[i % lastNames.length];
       const phone = `08${Math.floor(10000000 + Math.random() * 90000000)}`;
-      const address = msuLocations[i % msuLocations.length];
-
-
-      const angle = (i / count) * 2 * Math.PI + (Math.random() * 0.2 - 0.1);
-
-      const distanceOffset = i % 2 === 0
-        ? 0.002 + Math.random() * 0.005
-        : 0.008 + Math.random() * 0.007;
-
-      const lat = Math.round((RESTAURANT_DEPOT.latitude + Math.sin(angle) * distanceOffset) * 1000000) / 1000000;
-      const lng = Math.round((RESTAURANT_DEPOT.longitude + Math.cos(angle) * distanceOffset * 1.05) * 1000000) / 1000000;
+      const landmark = MSU_LANDMARKS[i % MSU_LANDMARKS.length];
 
       const customer = this.createCustomer({
         firstName: fName,
         lastName: lName,
         phone,
-        address,
-        latitude: lat,
-        longitude: lng,
+        address: landmark.address,
+        latitude: landmark.latitude,
+        longitude: landmark.longitude,
       });
 
       const boxCount = Math.floor(Math.random() * 3) + 1;
