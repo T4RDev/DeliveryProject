@@ -83,14 +83,38 @@ customerRouter.get('/:id', (req: Request, res: Response) => {
   }
 });
 
+customerRouter.get('/landmarks', (req: Request, res: Response) => {
+  try {
+    const landmarks = db.getMsuLandmarks();
+    res.json({
+      success: true,
+      count: landmarks.length,
+      data: landmarks,
+    });
+  } catch (error) {
+    res.status(500).json({ success: false, message: 'Internal server error', error });
+  }
+});
+
 customerRouter.post('/', (req: Request, res: Response) => {
   try {
-    const { firstName, lastName, phone, address, latitude, longitude } = req.body;
-    if (!firstName || !lastName || !phone || !address || latitude === undefined || longitude === undefined) {
+    const { firstName, lastName, phone, address } = req.body;
+    let { latitude, longitude } = req.body;
+
+    if (!firstName || !lastName || !phone || !address) {
       return res.status(400).json({
         success: false,
-        message: 'กรุณากรอกข้อมูลให้ครบถ้วน: firstName, lastName, phone, address, latitude, longitude',
+        message: 'กรุณากรอกข้อมูลให้ครบถ้วน: firstName, lastName, phone, address',
       });
+    }
+
+    if (latitude === undefined || longitude === undefined || isNaN(parseFloat(latitude)) || isNaN(parseFloat(longitude))) {
+      const resolved = db.resolveAddressLocation(address);
+      latitude = resolved.latitude;
+      longitude = resolved.longitude;
+    } else {
+      latitude = parseFloat(latitude);
+      longitude = parseFloat(longitude);
     }
 
     const newCustomer = db.createCustomer({
@@ -98,8 +122,8 @@ customerRouter.post('/', (req: Request, res: Response) => {
       lastName,
       phone,
       address,
-      latitude: parseFloat(latitude),
-      longitude: parseFloat(longitude),
+      latitude,
+      longitude,
     });
 
     res.status(201).json({

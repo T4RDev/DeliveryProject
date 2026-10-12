@@ -22,10 +22,8 @@ interface OsrmResponse {
   routes?: OsrmRoute[];
 }
 
-/**
- * ดึงข้อมูลเส้นทางและโครงข่ายถนนจริงผ่าน OSRM (Open Source Routing Machine)
- * เพื่อให้เส้นทางคำนวณตามแนวถนนจริง ไม่ใช่เส้นตรงเครื่องบิน
- */
+
+
 async function fetchRoadRoute(
   waypoints: Array<{ latitude: number; longitude: number }>
 ): Promise<{
@@ -50,7 +48,6 @@ async function fetchRoadRoute(
     if (data.code !== 'Ok' || !data.routes || data.routes.length === 0) return null;
 
     const route = data.routes[0];
-    // OSRM ส่งกลับมาเป็น [lng, lat] จึงแปลงเป็น [lat, lng] ให้ตรงกับ Leaflet
     const polylineCoordinates: [number, number][] = route.geometry.coordinates.map(
       (c) => [c[1], c[0]] as [number, number]
     );
@@ -102,7 +99,6 @@ export class RoutingService {
 
     const totalBoxes = orders.reduce((sum, o) => sum + o.boxCount, 0);
 
-    // คำนวณมุมเชิงขั้ว (Polar Angle) เพื่อแบ่ง Cluster ตามทิศทางรอบ มมส. ขามเรียง
     const ordersWithAngle = orders.map((order) => {
       const lat = order.customer?.latitude ?? RESTAURANT_DEPOT.latitude;
       const lng = order.customer?.longitude ?? RESTAURANT_DEPOT.longitude;
@@ -118,7 +114,6 @@ export class RoutingService {
 
     ordersWithAngle.sort((a, b) => a.angle - b.angle);
 
-    // จัดกลุ่มตามความจุสูงสุดของไรเดอร์ (ไม่เกิน 10 กล่องต่อคัน)
     const riderClusters: Array<{ orders: Order[]; boxCount: number }> = [];
     let currentClusterOrders: Order[] = [];
     let currentClusterBoxes = 0;
@@ -146,11 +141,9 @@ export class RoutingService {
       });
     }
 
-    // ประมวลผลเส้นทางของไรเดอร์แต่ละคันตามโครงข่ายถนนจริง
     const routePromises = riderClusters.map(async (cluster, idx) => {
       const rider: Rider = riders[idx % riders.length];
 
-      // จัดลำดับจุดส่งด้วย Nearest Neighbor TSP
       let unvisited = [...cluster.orders];
       const orderedOrders: Order[] = [];
       let currentLat = RESTAURANT_DEPOT.latitude;
@@ -177,7 +170,6 @@ export class RoutingService {
         currentLng = nextOrder.customer?.longitude ?? currentLng;
       }
 
-      // พิกัดจุดแวะ: ร้าน -> จุดส่ง 1..N -> ร้าน
       const waypoints = [
         { latitude: RESTAURANT_DEPOT.latitude, longitude: RESTAURANT_DEPOT.longitude },
         ...orderedOrders.map((ord) => ({
@@ -187,7 +179,6 @@ export class RoutingService {
         { latitude: RESTAURANT_DEPOT.latitude, longitude: RESTAURANT_DEPOT.longitude },
       ];
 
-      // ดึงเส้นทางวิ่งจริงตามถนนจาก OSRM
       const roadRoute = await fetchRoadRoute(waypoints);
 
       const stops: RouteStop[] = [];
@@ -200,7 +191,6 @@ export class RoutingService {
         const custLat = ord.customer?.latitude ?? lastLat;
         const custLng = ord.customer?.longitude ?? lastLng;
 
-        // คำนวณระยะทางจริงตามถนน (หาก fallback ใช้ตัวคูณโค้งถนน 1.35)
         const legDist =
           roadRoute?.legDistancesKm[stopIdx] ??
           Math.round(calculateDistanceKm(lastLat, lastLng, custLat, custLng) * 1.35 * 100) / 100;
@@ -263,16 +253,16 @@ export class RoutingService {
         roadRoute && roadRoute.polylineCoordinates.length > 0
           ? roadRoute.polylineCoordinates
           : [
-              [RESTAURANT_DEPOT.latitude, RESTAURANT_DEPOT.longitude],
-              ...orderedOrders.map(
-                (o) =>
-                  [
-                    o.customer?.latitude ?? RESTAURANT_DEPOT.latitude,
-                    o.customer?.longitude ?? RESTAURANT_DEPOT.longitude,
-                  ] as [number, number]
-              ),
-              [RESTAURANT_DEPOT.latitude, RESTAURANT_DEPOT.longitude],
-            ];
+            [RESTAURANT_DEPOT.latitude, RESTAURANT_DEPOT.longitude],
+            ...orderedOrders.map(
+              (o) =>
+                [
+                  o.customer?.latitude ?? RESTAURANT_DEPOT.latitude,
+                  o.customer?.longitude ?? RESTAURANT_DEPOT.longitude,
+                ] as [number, number]
+            ),
+            [RESTAURANT_DEPOT.latitude, RESTAURANT_DEPOT.longitude],
+          ];
 
       const roundTripDist = roadRoute
         ? roadRoute.totalDistanceKm

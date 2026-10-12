@@ -1,7 +1,7 @@
 import { Injectable, inject } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
 import { Observable } from 'rxjs';
-import { Customer, Order, Rider, DispatchPlan, RiderSheetData } from '../models/delivery.model';
+import { Customer, Order, Rider, DispatchPlan, RiderSheetData, MsuLandmark } from '../models/delivery.model';
 import { environment } from '../../environments/environment';
 
 @Injectable({
@@ -13,6 +13,10 @@ export class ApiService {
 
   getCustomers(): Observable<{ success: boolean; count: number; data: Customer[] }> {
     return this.http.get<{ success: boolean; count: number; data: Customer[] }>(`${this.baseUrl}/customers`);
+  }
+
+  getMsuLandmarks(): Observable<{ success: boolean; count: number; data: MsuLandmark[] }> {
+    return this.http.get<{ success: boolean; count: number; data: MsuLandmark[] }>(`${this.baseUrl}/customers/landmarks`);
   }
 
   searchCustomers(q: string): Observable<{ success: boolean; count: number; data: Customer[] }> {

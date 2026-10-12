@@ -4,11 +4,19 @@ export interface Customer {
   lastName: string;
   phone: string;
   address: string;
-  latitude: number;
-  longitude: number;
+  latitude?: number;
+  longitude?: number;
   distanceKm?: number;
   createdAt?: string;
   updatedAt?: string;
+}
+
+export interface MsuLandmark {
+  name: string;
+  category: string;
+  address: string;
+  latitude: number;
+  longitude: number;
 }
 
 export interface Order {
