@@ -5,6 +5,24 @@ import { ApiService } from './services/api.service';
 import { Customer, Order, Rider, DispatchPlan, RiderSheetData, RiderRoute, RouteStop, MsuLandmark } from './models/delivery.model';
 import * as L from 'leaflet';
 
+const DEFAULT_MSU_LANDMARKS: MsuLandmark[] = [
+  { name: 'คณะเทคโนโลยีสารสนเทศ (IT MSU)', category: 'คณะ', address: 'คณะเทคโนโลยีสารสนเทศ (IT MSU) มหาวิทยาลัยมหาสารคาม ขามเรียง', latitude: 16.2405, longitude: 103.2585 },
+  { name: 'อาคารวิทยบริการ (หอสมุดกลาง มมส.)', category: 'อาคารกลาง', address: 'อาคารวิทยบริการ (หอสมุดกลาง มมส.) ขามเรียง', latitude: 16.2486, longitude: 103.2563 },
+  { name: 'อาคารบรมราชกุมารี (สนง.อธิการบดี)', category: 'อาคารกลาง', address: 'อาคารบรมราชกุมารี สำนักงานอธิการบดี มหาวิทยาลัยมหาสารคาม', latitude: 16.2477, longitude: 103.2514 },
+  { name: 'คณะการบัญชีและการจัดการ (MBS)', category: 'คณะ', address: 'คณะการบัญชีและการจัดการ (MBS) มหาวิทยาลัยมหาสารคาม ขามเรียง', latitude: 16.2420, longitude: 103.2510 },
+  { name: 'คณะวิศวกรรมศาสตร์ มมส.', category: 'คณะ', address: 'คณะวิศวกรรมศาสตร์ มหาวิทยาลัยมหาสารคาม ขามเรียง', latitude: 16.2383, longitude: 103.2577 },
+  { name: 'ตึกสิริวิทย์ คณะศึกษาศาสตร์', category: 'คณะ', address: 'ตึกสิริวิทย์ คณะศึกษาศาสตร์ มหาวิทยาลัยมหาสารคาม ขามเรียง', latitude: 16.2470, longitude: 103.2570 },
+  { name: 'ศูนย์อาหารกลาง (Complex มมส.)', category: 'ร้านอาหาร/ส่วนกลาง', address: 'ศูนย์อาหารกลาง (Complex มมส.) มหาวิทยาลัยมหาสารคาม ขามเรียง', latitude: 16.2473, longitude: 103.2607 },
+  { name: 'โรงพยาบาลสุทธาเวช มมส.', category: 'โรงพยาบาล', address: 'โรงพยาบาลสุทธาเวช คณะแพทยศาสตร์ มหาวิทยาลัยมหาสารคาม', latitude: 16.2495, longitude: 103.2497 },
+  { name: 'คณะมนุษยศาสตร์และสังคมศาสตร์', category: 'คณะ', address: 'คณะมนุษยศาสตร์และสังคมศาสตร์ มหาวิทยาลัยมหาสารคาม ขามเรียง', latitude: 16.2455, longitude: 103.2530 },
+  { name: 'คณะสาธารณสุขศาสตร์ มมส.', category: 'คณะ', address: 'คณะสาธารณสุขศาสตร์ มหาวิทยาลัยมหาสารคาม ขามเรียง', latitude: 16.2410, longitude: 103.2560 },
+  { name: 'หอพักสุขสบาย ซอยวุ่นวาย ขามเรียง', category: 'หอพัก', address: 'หอพักสุขสบาย ซอยวุ่นวาย ตำบลขามเรียง อำเภอกันทรวิชัย', latitude: 16.2390, longitude: 103.2503 },
+  { name: 'คอนโดเดอะพาร์ค มมส.', category: 'หอพัก/คอนโด', address: 'คอนโดเดอะพาร์ค มมส. ตำบลขามเรียง อำเภอกันทรวิชัย', latitude: 16.2457, longitude: 103.2490 },
+  { name: 'หอพักอินเตอร์ มมส. ขามเรียง', category: 'หอพัก', address: 'หอพักอินเตอร์ มมส. ตำบลขามเรียง อำเภอกันทรวิชัย', latitude: 16.2399, longitude: 103.2485 },
+  { name: 'หอพักชื่นชม มมส.', category: 'หอพัก', address: 'หอพักชื่นชม หลัง มมส. ขามเรียง อำเภอกันทรวิชัย', latitude: 16.2465, longitude: 103.2480 },
+  { name: 'ศูนย์อาหารตลาดน้อย มมส. (จุดตั้งร้าน)', category: 'ร้านอาหาร/ส่วนกลาง', address: 'ศูนย์อาหารตลาดน้อย มหาวิทยาลัยมหาสารคาม (มมส. ขามเรียง)', latitude: 16.2435, longitude: 103.2545 },
+];
+
 @Component({
   selector: 'app-root',
   standalone: true,
@@ -30,7 +48,7 @@ export class App implements OnInit, AfterViewInit {
   riders = signal<Rider[]>([]);
   dispatchPlan = signal<DispatchPlan | null>(null);
 
-  msuLandmarks = signal<MsuLandmark[]>([]);
+  msuLandmarks = signal<MsuLandmark[]>(DEFAULT_MSU_LANDMARKS);
   selectedLandmarkName = signal<string>('คณะเทคโนโลยีสารสนเทศ (IT MSU)');
 
   selectedRiderId = signal<number>(1);
