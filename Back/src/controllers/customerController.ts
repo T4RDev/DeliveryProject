@@ -70,19 +70,6 @@ customerRouter.get('/nearby', (req: Request, res: Response) => {
   }
 });
 
-customerRouter.get('/:id', (req: Request, res: Response) => {
-  try {
-    const id = parseInt(req.params.id);
-    const customer = db.getCustomerById(id);
-    if (!customer) {
-      return res.status(404).json({ success: false, message: 'ไม่พบข้อมูลลูกค้า' });
-    }
-    res.json({ success: true, data: customer });
-  } catch (error) {
-    res.status(500).json({ success: false, message: 'Internal server error', error });
-  }
-});
-
 customerRouter.get('/landmarks', (req: Request, res: Response) => {
   try {
     const landmarks = db.getMsuLandmarks();
@@ -91,6 +78,19 @@ customerRouter.get('/landmarks', (req: Request, res: Response) => {
       count: landmarks.length,
       data: landmarks,
     });
+  } catch (error) {
+    res.status(500).json({ success: false, message: 'Internal server error', error });
+  }
+});
+
+customerRouter.get('/:id', (req: Request, res: Response) => {
+  try {
+    const id = parseInt(req.params.id);
+    const customer = db.getCustomerById(id);
+    if (!customer) {
+      return res.status(404).json({ success: false, message: 'ไม่พบข้อมูลลูกค้า' });
+    }
+    res.json({ success: true, data: customer });
   } catch (error) {
     res.status(500).json({ success: false, message: 'Internal server error', error });
   }
