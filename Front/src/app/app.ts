@@ -1,26 +1,25 @@
-import { Component, OnInit, AfterViewInit, inject, signal } from '@angular/core';
+import { Component, OnInit, inject, signal } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { ApiService } from './services/api.service';
-import { Customer, Order, Rider, DispatchPlan, RiderSheetData, RiderRoute, RouteStop, MsuLandmark } from './models/delivery.model';
-import * as L from 'leaflet';
+import { Customer, Order, MsuLandmark } from './models/delivery.model';
 
 const DEFAULT_MSU_LANDMARKS: MsuLandmark[] = [
-  { name: 'คณะเทคโนโลยีสารสนเทศ (IT MSU)', category: 'คณะ', address: 'คณะเทคโนโลยีสารสนเทศ (IT MSU) มหาวิทยาลัยมหาสารคาม ขามเรียง', latitude: 16.2405, longitude: 103.2585 },
-  { name: 'อาคารวิทยบริการ (หอสมุดกลาง มมส.)', category: 'อาคารกลาง', address: 'อาคารวิทยบริการ (หอสมุดกลาง มมส.) ขามเรียง', latitude: 16.2486, longitude: 103.2563 },
-  { name: 'อาคารบรมราชกุมารี (สนง.อธิการบดี)', category: 'อาคารกลาง', address: 'อาคารบรมราชกุมารี สำนักงานอธิการบดี มหาวิทยาลัยมหาสารคาม', latitude: 16.2477, longitude: 103.2514 },
-  { name: 'คณะการบัญชีและการจัดการ (MBS)', category: 'คณะ', address: 'คณะการบัญชีและการจัดการ (MBS) มหาวิทยาลัยมหาสารคาม ขามเรียง', latitude: 16.2420, longitude: 103.2510 },
-  { name: 'คณะวิศวกรรมศาสตร์ มมส.', category: 'คณะ', address: 'คณะวิศวกรรมศาสตร์ มหาวิทยาลัยมหาสารคาม ขามเรียง', latitude: 16.2383, longitude: 103.2577 },
-  { name: 'ตึกสิริวิทย์ คณะศึกษาศาสตร์', category: 'คณะ', address: 'ตึกสิริวิทย์ คณะศึกษาศาสตร์ มหาวิทยาลัยมหาสารคาม ขามเรียง', latitude: 16.2470, longitude: 103.2570 },
-  { name: 'ศูนย์อาหารกลาง (Complex มมส.)', category: 'ร้านอาหาร/ส่วนกลาง', address: 'ศูนย์อาหารกลาง (Complex มมส.) มหาวิทยาลัยมหาสารคาม ขามเรียง', latitude: 16.2473, longitude: 103.2607 },
-  { name: 'โรงพยาบาลสุทธาเวช มมส.', category: 'โรงพยาบาล', address: 'โรงพยาบาลสุทธาเวช คณะแพทยศาสตร์ มหาวิทยาลัยมหาสารคาม', latitude: 16.2495, longitude: 103.2497 },
-  { name: 'คณะมนุษยศาสตร์และสังคมศาสตร์', category: 'คณะ', address: 'คณะมนุษยศาสตร์และสังคมศาสตร์ มหาวิทยาลัยมหาสารคาม ขามเรียง', latitude: 16.2455, longitude: 103.2530 },
-  { name: 'คณะสาธารณสุขศาสตร์ มมส.', category: 'คณะ', address: 'คณะสาธารณสุขศาสตร์ มหาวิทยาลัยมหาสารคาม ขามเรียง', latitude: 16.2410, longitude: 103.2560 },
-  { name: 'หอพักสุขสบาย ซอยวุ่นวาย ขามเรียง', category: 'หอพัก', address: 'หอพักสุขสบาย ซอยวุ่นวาย ตำบลขามเรียง อำเภอกันทรวิชัย', latitude: 16.2390, longitude: 103.2503 },
-  { name: 'คอนโดเดอะพาร์ค มมส.', category: 'หอพัก/คอนโด', address: 'คอนโดเดอะพาร์ค มมส. ตำบลขามเรียง อำเภอกันทรวิชัย', latitude: 16.2457, longitude: 103.2490 },
-  { name: 'หอพักอินเตอร์ มมส. ขามเรียง', category: 'หอพัก', address: 'หอพักอินเตอร์ มมส. ตำบลขามเรียง อำเภอกันทรวิชัย', latitude: 16.2399, longitude: 103.2485 },
-  { name: 'หอพักชื่นชม มมส.', category: 'หอพัก', address: 'หอพักชื่นชม หลัง มมส. ขามเรียง อำเภอกันทรวิชัย', latitude: 16.2465, longitude: 103.2480 },
-  { name: 'ศูนย์อาหารตลาดน้อย มมส. (จุดตั้งร้าน)', category: 'ร้านอาหาร/ส่วนกลาง', address: 'ศูนย์อาหารตลาดน้อย มหาวิทยาลัยมหาสารคาม (มมส. ขามเรียง)', latitude: 16.2435, longitude: 103.2545 },
+  { name: 'คณะเทคโนโลยีสารสนเทศ (IT MSU)', category: 'คณะ', address: 'คณะเทคโนโลยีสารสนเทศ มหาวิทยาลัยมหาสารคาม ขามเรียง' },
+  { name: 'อาคารวิทยบริการ (หอสมุดกลาง มมส.)', category: 'อาคารกลาง', address: 'หอสมุดกลาง มหาวิทยาลัยมหาสารคาม ขามเรียง' },
+  { name: 'อาคารบรมราชกุมารี (สำนักงานอธิการบดี)', category: 'อาคารกลาง', address: 'สำนักงานอธิการบดี มหาวิทยาลัยมหาสารคาม ขามเรียง' },
+  { name: 'คณะการบัญชีและการจัดการ (MBS)', category: 'คณะ', address: 'คณะการบัญชีและการจัดการ มหาวิทยาลัยมหาสารคาม ขามเรียง' },
+  { name: 'คณะวิศวกรรมศาสตร์ มมส.', category: 'คณะ', address: 'คณะวิศวกรรมศาสตร์ มหาวิทยาลัยมหาสารคาม ขามเรียง' },
+  { name: 'ตึกสิริวิทย์ คณะศึกษาศาสตร์', category: 'คณะ', address: 'คณะศึกษาศาสตร์ มหาวิทยาลัยมหาสารคาม ขามเรียง' },
+  { name: 'ศูนย์อาหารกลาง (Complex มมส.)', category: 'ร้านอาหาร/ส่วนกลาง', address: 'อาคารคอมเพล็กซ์ มหาวิทยาลัยมหาสารคาม ขามเรียง' },
+  { name: 'โรงพยาบาลสุทธาเวช มมส.', category: 'โรงพยาบาล', address: 'โรงพยาบาลสุทธาเวช มหาวิทยาลัยมหาสารคาม' },
+  { name: 'คณะมนุษยศาสตร์และสังคมศาสตร์', category: 'คณะ', address: 'คณะมนุษยศาสตร์และสังคมศาสตร์ มหาวิทยาลัยมหาสารคาม' },
+  { name: 'คณะสาธารณสุขศาสตร์ มมส.', category: 'คณะ', address: 'คณะสาธารณสุขศาสตร์ มหาวิทยาลัยมหาสารคาม ขามเรียง' },
+  { name: 'หอพักสุขสบาย ซอยวุ่นวาย ขามเรียง', category: 'หอพัก', address: 'หอพักสุขสบาย ซอยวุ่นวาย ขามเรียง มหาสารคาม' },
+  { name: 'คอนโดเดอะพาร์ค มมส.', category: 'หอพัก/คอนโด', address: 'คอนโดเดอะพาร์ค ขามเรียง มหาสารคาม' },
+  { name: 'หอพักอินเตอร์ มมส. ขามเรียง', category: 'หอพัก', address: 'หอพักอินเตอร์ ขามเรียง มหาสารคาม' },
+  { name: 'หอพักชื่นชม มมส.', category: 'หอพัก', address: 'หอพักชื่นชม ขามเรียง มหาสารคาม' },
+  { name: 'ศูนย์อาหารตลาดน้อย มมส.', category: 'ร้านอาหาร/ส่วนกลาง', address: 'ศูนย์อาหารตลาดน้อย มหาวิทยาลัยมหาสารคาม ขามเรียง' },
 ];
 
 @Component({
@@ -30,85 +29,48 @@ const DEFAULT_MSU_LANDMARKS: MsuLandmark[] = [
   templateUrl: './app.html',
   styleUrls: ['./app.css'],
 })
-export class App implements OnInit, AfterViewInit {
+export class App implements OnInit {
   private api = inject(ApiService);
-
-  readonly MSU_LAT = 16.2435;
-  readonly MSU_LNG = 103.2545;
-
-  activeTab = signal<'owner' | 'orders' | 'rider'>('owner');
 
   backendConnected = signal<boolean>(false);
   isLoading = signal<boolean>(false);
   alertMessage = signal<{ type: 'success' | 'error' | 'info'; text: string } | null>(null);
 
-  customers = signal<Customer[]>([]);
   orders = signal<Order[]>([]);
   totalOrderCount = signal<number>(0);
-  riders = signal<Rider[]>([]);
-  dispatchPlan = signal<DispatchPlan | null>(null);
+  totalBoxes = signal<number>(0);
+  pendingCount = signal<number>(0);
+  deliveredCount = signal<number>(0);
 
   msuLandmarks = signal<MsuLandmark[]>(DEFAULT_MSU_LANDMARKS);
   selectedLandmarkName = signal<string>('คณะเทคโนโลยีสารสนเทศ (IT MSU)');
 
-  selectedRiderId = signal<number>(1);
-  currentRiderSheet = signal<RiderSheetData | null>(null);
-
-  activeStopForMap = signal<RouteStop | null>(null);
-  private riderModalMap: L.Map | null = null;
-  private orderPinMarker: L.Marker | null = null;
-
   customerSearchQuery = '';
   searchPhoneQuery = '';
   phoneLookupResult = signal<string | null>(null);
+  statusFilter = signal<'all' | 'pending' | 'delivered'>('all');
 
   newOrderForm = {
     firstName: '',
     lastName: '',
     phone: '',
-    address: 'คณะเทคโนโลยีสารสนเทศ (IT MSU) มหาวิทยาลัยมหาสารคาม ขามเรียง',
-    latitude: 16.2405,
-    longitude: 103.2585,
-    boxCount: 2,
-    note: 'มื้อเที่ยงส่งด่วน มมส.',
+    address: 'คณะเทคโนโลยีสารสนเทศ มหาวิทยาลัยมหาสารคาม ขามเรียง',
+    boxCount: 1,
+    note: '',
   };
-
-  currentFilterLabel = signal<string>('แสดงทั้งหมด');
-
-  private map: L.Map | null = null;
-  private routeLayers: L.LayerGroup | null = null;
 
   ngOnInit() {
     this.checkBackendAndLoadData();
     this.loadMsuLandmarks();
   }
 
-  ngAfterViewInit() {
-    if (this.activeTab() === 'owner') {
-      setTimeout(() => this.initMap(), 300);
-    }
-  }
-
-  setTab(tab: 'owner' | 'orders' | 'rider') {
-    this.activeTab.set(tab);
-    if (tab === 'owner') {
-      setTimeout(() => {
-        this.initMap();
-        if (this.map) {
-          this.map.invalidateSize();
-          this.renderRoutesOnMap();
-        }
-      }, 200);
-    } else if (tab === 'rider') {
-      this.loadRiderSheet(this.selectedRiderId());
-    }
-  }
-
   showAlert(type: 'success' | 'error' | 'info', text: string) {
     this.alertMessage.set({ type, text });
     setTimeout(() => {
-      this.alertMessage.set(null);
-    }, 4500);
+      if (this.alertMessage()?.text === text) {
+        this.alertMessage.set(null);
+      }
+    }, 4000);
   }
 
   checkBackendAndLoadData() {
@@ -116,68 +78,205 @@ export class App implements OnInit, AfterViewInit {
     this.api.getOrders().subscribe({
       next: (res) => {
         this.backendConnected.set(true);
-        this.orders.set(res.data);
-        this.totalOrderCount.set(res.count);
-        this.loadCustomers();
-        this.loadRiders();
-        this.loadDispatchPlan();
+        this.updateOrderList(res.data, res.totalBoxes);
         this.isLoading.set(false);
       },
       error: () => {
         this.backendConnected.set(false);
         this.isLoading.set(false);
-        this.showAlert('error', 'ไม่สามารถเชื่อมต่อเซิร์ฟเวอร์ Backend ได้ กรุณาตรวจสอบสถานะการรัน API');
+        this.showAlert('error', 'ไม่สามารถเชื่อมต่อเซิร์ฟเวอร์ได้');
       },
     });
   }
 
-  loadCustomers() {
-    this.api.getCustomers().subscribe({
-      next: (res) => this.customers.set(res.data),
-    });
-  }
-
-  loadOrders() {
-    this.customerSearchQuery = '';
-    this.currentFilterLabel.set('แสดงทั้งหมด');
-    this.api.getOrders().subscribe({
+  loadMsuLandmarks() {
+    this.api.getMsuLandmarks().subscribe({
       next: (res) => {
-        this.orders.set(res.data);
-        this.totalOrderCount.set(res.count);
-      },
-    });
-  }
-
-  loadRiders() {
-    this.api.getRiders().subscribe({
-      next: (res) => this.riders.set(res.data),
-    });
-  }
-
-  loadDispatchPlan() {
-    this.api.getDispatchPlan().subscribe({
-      next: (res) => {
-        this.dispatchPlan.set(res.data);
-        if (this.activeTab() === 'owner') {
-          setTimeout(() => this.renderRoutesOnMap(), 200);
+        if (res.data && res.data.length > 0) {
+          this.msuLandmarks.set(res.data);
         }
       },
+      error: () => {
+        this.msuLandmarks.set(DEFAULT_MSU_LANDMARKS);
+      },
     });
   }
 
-  optimizeRoutes() {
+  loadOrders(query?: string) {
     this.isLoading.set(true);
-    this.api.optimizeRoutes().subscribe({
+    this.api.getOrders(query).subscribe({
       next: (res) => {
-        this.dispatchPlan.set(res.data);
+        this.updateOrderList(res.data, res.totalBoxes);
         this.isLoading.set(false);
-        this.showAlert('success', `จัดเส้นทางสำเร็จ แบ่งงานให้ไรเดอร์ทั้งหมด ${res.data.ridersAssigned} คน`);
-        this.loadOrders();
-        setTimeout(() => this.renderRoutesOnMap(), 200);
       },
       error: () => {
         this.isLoading.set(false);
-        this.showAlert('error', 'เกิดข้อผิดพลาดในการจัดเส้นทาง');
+        this.showAlert('error', 'โหลดข้อมูลไม่สำเร็จ');
+      },
+    });
+  }
+
+  private updateOrderList(orders: Order[], totalBoxes?: number) {
+    this.orders.set(orders);
+    this.totalOrderCount.set(orders.length);
+    const boxes = totalBoxes ?? orders.reduce((sum, o) => sum + o.boxCount, 0);
+    this.totalBoxes.set(boxes);
+    this.pendingCount.set(orders.filter((o) => o.status !== 'delivered').length);
+    this.deliveredCount.set(orders.filter((o) => o.status === 'delivered').length);
+  }
+
+  get filteredOrders(): Order[] {
+    const filter = this.statusFilter();
+    if (filter === 'pending') return this.orders().filter((o) => o.status !== 'delivered');
+    if (filter === 'delivered') return this.orders().filter((o) => o.status === 'delivered');
+    return this.orders();
+  }
+
+  setFilterStatus(status: 'all' | 'pending' | 'delivered') {
+    this.statusFilter.set(status);
+  }
+
+  onSearchOrders() {
+    this.loadOrders(this.customerSearchQuery);
+  }
+
+  onSelectLandmark(name: string) {
+    this.selectedLandmarkName.set(name);
+    const landmark = this.msuLandmarks().find((lm) => lm.name === name);
+    if (landmark) {
+      this.newOrderForm.address = landmark.address;
+    }
+  }
+
+  pickRandomMsuLocation() {
+    const list = this.msuLandmarks();
+    if (!list || list.length === 0) return;
+    const randomIdx = Math.floor(Math.random() * list.length);
+    const picked = list[randomIdx];
+    this.onSelectLandmark(picked.name);
+  }
+
+  lookupCustomerByPhone() {
+    const phone = this.searchPhoneQuery.trim();
+    if (!phone) {
+      this.phoneLookupResult.set('กรุณาใส่เบอร์โทรศัพท์');
+      return;
+    }
+
+    this.api.getCustomerByPhone(phone).subscribe({
+      next: (res) => {
+        if (res.success && res.data) {
+          const c = res.data;
+          this.newOrderForm.firstName = c.firstName;
+          this.newOrderForm.lastName = c.lastName;
+          this.newOrderForm.phone = c.phone;
+          this.newOrderForm.address = c.address;
+          this.phoneLookupResult.set(`พบข้อมูล: ${c.firstName} ${c.lastName}`);
+          this.showAlert('success', `ดึงข้อมูลลูกค้าเดิมสำเร็จ`);
+        } else {
+          this.phoneLookupResult.set('ไม่พบข้อมูล (สร้างเป็นลูกค้าใหม่)');
+          this.newOrderForm.phone = phone;
+        }
+      },
+      error: () => {
+        this.phoneLookupResult.set('ไม่พบข้อมูลลูกค้าเดิม');
+        this.newOrderForm.phone = phone;
+      },
+    });
+  }
+
+  submitNewOrder() {
+    if (!this.newOrderForm.firstName.trim() || !this.newOrderForm.phone.trim()) {
+      this.showAlert('error', 'กรุณากรอกชื่อและเบอร์โทรศัพท์');
+      return;
+    }
+
+    this.isLoading.set(true);
+    const customerPayload: Partial<Customer> = {
+      firstName: this.newOrderForm.firstName.trim(),
+      lastName: this.newOrderForm.lastName.trim(),
+      phone: this.newOrderForm.phone.trim(),
+      address: this.newOrderForm.address.trim(),
+    };
+
+    this.api.createCustomer(customerPayload).subscribe({
+      next: (cRes) => {
+        const customer = cRes.data;
+        this.api
+          .createOrder({
+            customerId: customer.id,
+            boxCount: this.newOrderForm.boxCount,
+            note: this.newOrderForm.note?.trim() || undefined,
+          })
+          .subscribe({
+            next: (oRes) => {
+              this.isLoading.set(false);
+              this.showAlert('success', `บันทึกออเดอร์ #${oRes.data.id} สำเร็จ`);
+              this.loadOrders();
+              this.resetNewOrderForm();
+            },
+            error: () => {
+              this.isLoading.set(false);
+              this.showAlert('error', 'บันทึกออเดอร์ไม่สำเร็จ');
+            },
+          });
+      },
+      error: () => {
+        this.isLoading.set(false);
+        this.showAlert('error', 'บันทึกข้อมูลลูกค้าไม่สำเร็จ');
+      },
+    });
+  }
+
+  private resetNewOrderForm() {
+    this.newOrderForm.firstName = '';
+    this.newOrderForm.lastName = '';
+    this.newOrderForm.phone = '';
+    this.newOrderForm.note = '';
+    this.searchPhoneQuery = '';
+    this.phoneLookupResult.set(null);
+  }
+
+  changeBoxCount(order: Order, delta: number) {
+    const newCount = order.boxCount + delta;
+    if (newCount < 1 || newCount > 3) return;
+
+    this.api.updateOrder(order.id, { boxCount: newCount }).subscribe({
+      next: () => {
+        order.boxCount = newCount;
+        const total = this.orders().reduce((s, o) => s + o.boxCount, 0);
+        this.totalBoxes.set(total);
+      },
+      error: () => {
+        this.showAlert('error', 'แก้ไขจำนวนกล่องไม่สำเร็จ');
+      },
+    });
+  }
+
+  toggleOrderStatus(order: Order) {
+    const nextStatus = order.status === 'delivered' ? 'pending' : 'delivered';
+    this.api.updateOrder(order.id, { status: nextStatus }).subscribe({
+      next: () => {
+        order.status = nextStatus;
+        this.pendingCount.set(this.orders().filter((o) => o.status !== 'delivered').length);
+        this.deliveredCount.set(this.orders().filter((o) => o.status === 'delivered').length);
+      },
+      error: () => {
+        this.showAlert('error', 'อัปเดตสถานะไม่สำเร็จ');
+      },
+    });
+  }
+
+  deleteOrder(id: number) {
+    if (!confirm(`ลบออเดอร์ #${id} หรือไม่?`)) return;
+
+    this.api.deleteOrder(id).subscribe({
+      next: () => {
+        this.showAlert('info', `ลบออเดอร์ #${id} แล้ว`);
+        this.loadOrders();
+      },
+      error: () => {
+        this.showAlert('error', 'ลบออเดอร์ไม่สำเร็จ');
       },
     });
   }
@@ -186,495 +285,36 @@ export class App implements OnInit, AfterViewInit {
     this.isLoading.set(true);
     this.api.mockOrders(count).subscribe({
       next: (res) => {
-        this.orders.set(res.data);
-        this.totalOrderCount.set(res.count);
-        this.currentFilterLabel.set('แสดงทั้งหมด');
-        this.customerSearchQuery = '';
         this.isLoading.set(false);
-        this.showAlert('success', `จำลองออเดอร์สำเร็จ ${res.count} รายการ (รอบ มมส. ขามเรียง)`);
-        this.optimizeRoutes();
+        this.showAlert('success', `สร้างข้อมูลตัวอย่าง ${res.count} รายการแล้ว`);
+        this.loadOrders();
       },
       error: () => {
         this.isLoading.set(false);
-        this.showAlert('error', 'เกิดข้อผิดพลาดในการจำลองออเดอร์');
+        this.showAlert('error', 'สร้างข้อมูลตัวอย่างไม่สำเร็จ');
       },
     });
   }
 
   clearOrders() {
-    if (!confirm('ยืนยันล้างรายการสั่งซื้อทั้งหมด?')) return;
+    if (!confirm('ต้องการล้างออเดอร์ทั้งหมดใช่หรือไม่?')) return;
+
     this.isLoading.set(true);
     this.api.clearOrders().subscribe({
       next: () => {
-        this.orders.set([]);
-        this.totalOrderCount.set(0);
-        this.dispatchPlan.set(null);
         this.isLoading.set(false);
-        this.showAlert('info', 'ล้างรายการสั่งซื้อทั้งหมดเรียบร้อยแล้ว');
-        if (this.routeLayers) this.routeLayers.clearLayers();
+        this.showAlert('info', 'ล้างข้อมูลออเดอร์ทั้งหมดแล้ว');
+        this.updateOrderList([], 0);
       },
       error: () => {
         this.isLoading.set(false);
-        this.showAlert('error', 'เกิดข้อผิดพลาดในการล้างออเดอร์');
+        this.showAlert('error', 'ล้างข้อมูลไม่สำเร็จ');
       },
     });
   }
 
-  lookupCustomerByPhone() {
-    if (!this.searchPhoneQuery.trim()) return;
-    this.api.getCustomerByPhone(this.searchPhoneQuery.trim()).subscribe({
-      next: (res) => {
-        const c = res.data;
-        this.newOrderForm.firstName = c.firstName;
-        this.newOrderForm.lastName = c.lastName;
-        this.newOrderForm.phone = c.phone;
-        this.newOrderForm.address = c.address;
-        this.newOrderForm.latitude = c.latitude ?? 16.2405;
-        this.newOrderForm.longitude = c.longitude ?? 103.2585;
-        this.phoneLookupResult.set(`พบลูกค้าเก่า: คุณ${c.firstName} ${c.lastName}`);
-        this.showAlert('success', `พบข้อมูลลูกค้าเก่า: คุณ${c.firstName} ${c.lastName} ระบบกรอกข้อมูลให้อัตโนมัติ`);
-      },
-      error: () => {
-        this.phoneLookupResult.set('ไม่พบข้อมูลลูกค้าจากเบอร์โทรนี้ (ลูกค้าใหม่ กรุณากรอกชื่อและที่อยู่)');
-      },
-    });
-  }
-
-  loadMsuLandmarks() {
-    this.api.getMsuLandmarks().subscribe({
-      next: (res) => this.msuLandmarks.set(res.data),
-    });
-  }
-
-  onSelectLandmark(landmarkName: string) {
-    const lm = this.msuLandmarks().find((item) => item.name === landmarkName);
-    if (!lm) return;
-    this.selectedLandmarkName.set(lm.name);
-    this.newOrderForm.address = lm.address;
-    this.newOrderForm.latitude = lm.latitude;
-    this.newOrderForm.longitude = lm.longitude;
-    this.updateOrderPinOnMap(lm.latitude, lm.longitude, lm.name);
-    if (this.map) {
-      this.map.panTo([lm.latitude, lm.longitude]);
-    }
-  }
-
-  pickRandomMsuLocation() {
-    const list = this.msuLandmarks();
-    if (!list || list.length === 0) return;
-    const randomItem = list[Math.floor(Math.random() * list.length)];
-    this.onSelectLandmark(randomItem.name);
-    this.showAlert('info', `สุ่มเลือกสถานที่จริง: ${randomItem.name}`);
-  }
-
-  updateOrderPinOnMap(lat: number, lng: number, label: string) {
-    if (!this.map) return;
-    if (this.orderPinMarker) {
-      this.orderPinMarker.setLatLng([lat, lng]);
-      this.orderPinMarker.setPopupContent(`<b>จุดส่งที่เลือก:</b><br>${label}`);
-    } else {
-      const pinIcon = L.divIcon({
-        html: `<div class="flex items-center justify-center w-8 h-8 bg-blue-600 text-white rounded-full text-xs font-bold border-2 border-white shadow-lg animate-bounce">📍</div>`,
-        className: 'custom-pin-marker',
-        iconSize: [32, 32],
-        iconAnchor: [16, 32],
-      });
-      this.orderPinMarker = L.marker([lat, lng], { icon: pinIcon }).addTo(this.map);
-      this.orderPinMarker.bindPopup(`<b>จุดส่งที่เลือก:</b><br>${label}`);
-    }
-    this.orderPinMarker.openPopup();
-  }
-
-  setOrderLocationFromMap(lat: number, lng: number) {
-    const cleanLat = Math.round(lat * 1000000) / 1000000;
-    const cleanLng = Math.round(lng * 1000000) / 1000000;
-    this.newOrderForm.latitude = cleanLat;
-    this.newOrderForm.longitude = cleanLng;
-
-    const closest = this.msuLandmarks().find(
-      (lm) => Math.abs(lm.latitude - cleanLat) < 0.0018 && Math.abs(lm.longitude - cleanLng) < 0.0018
-    );
-    if (closest) {
-      this.newOrderForm.address = closest.address;
-      this.selectedLandmarkName.set(closest.name);
-    } else {
-      this.newOrderForm.address = `จุดจัดส่งบนแผนที่ มมส. ขามเรียง`;
-      this.selectedLandmarkName.set('');
-    }
-    this.updateOrderPinOnMap(cleanLat, cleanLng, this.newOrderForm.address);
-    this.showAlert('info', `เลือกจุดส่งบนแผนที่: ${this.newOrderForm.address}`);
-  }
-
-  submitNewOrder() {
-    if (!this.newOrderForm.firstName || !this.newOrderForm.phone || !this.newOrderForm.address) {
-      this.showAlert('error', 'กรุณากรอกข้อมูลลูกค้าให้ครบถ้วน');
-      return;
-    }
-
-    this.isLoading.set(true);
-    this.api.createCustomer({
-      firstName: this.newOrderForm.firstName,
-      lastName: this.newOrderForm.lastName || 'ลูกค้า',
-      phone: this.newOrderForm.phone,
-      address: this.newOrderForm.address,
-      latitude: this.newOrderForm.latitude,
-      longitude: this.newOrderForm.longitude,
-    }).subscribe({
-      next: (cRes) => {
-        this.api.createOrder({
-          customerId: cRes.data.id,
-          boxCount: this.newOrderForm.boxCount,
-          note: this.newOrderForm.note,
-        }).subscribe({
-          next: () => {
-            this.isLoading.set(false);
-            this.showAlert('success', `เพิ่มออเดอร์สำเร็จ (${this.newOrderForm.boxCount} กล่อง)`);
-            this.loadOrders();
-            this.loadCustomers();
-            this.newOrderForm.firstName = '';
-            this.newOrderForm.lastName = '';
-            this.newOrderForm.phone = '';
-            this.newOrderForm.address = '';
-            this.phoneLookupResult.set(null);
-          },
-          error: () => {
-            this.isLoading.set(false);
-            this.showAlert('error', 'ไม่สามารถสร้างออเดอร์ได้');
-          },
-        });
-      },
-      error: () => {
-        this.isLoading.set(false);
-        this.showAlert('error', 'ไม่สามารถบันทึกข้อมูลลูกค้าได้');
-      },
-    });
-  }
-
-  changeBoxCount(order: Order, delta: number) {
-    const newCount = order.boxCount + delta;
-    if (newCount < 1 || newCount > 3) {
-      this.showAlert('info', 'จำนวนกล่องต่อออเดอร์ต้องอยู่ระหว่าง 1 ถึง 3 กล่อง');
-      return;
-    }
-    this.api.updateOrder(order.id, { boxCount: newCount }).subscribe({
-      next: () => {
-        this.showAlert('success', `แก้ไขจำนวนกล่องออเดอร์ #${order.id} เป็น ${newCount} กล่อง`);
-        this.loadOrders();
-        this.loadDispatchPlan();
-      },
-    });
-  }
-
-  deleteOrder(id: number) {
-    if (!confirm(`ต้องการลบรายการสั่งซื้อ #${id}?`)) return;
-    this.api.deleteOrder(id).subscribe({
-      next: () => {
-        this.showAlert('info', `ลบรายการสั่งซื้อ #${id} เรียบร้อยแล้ว`);
-        this.loadOrders();
-        this.loadDispatchPlan();
-      },
-    });
-  }
-
-  onSearchOrders() {
-    const q = this.customerSearchQuery.trim();
-    if (!q) {
-      this.loadOrders();
-      return;
-    }
-    this.api.getOrders(q).subscribe({
-      next: (res) => {
-        this.orders.set(res.data);
-        this.currentFilterLabel.set(`ค้นหา: "${q}"`);
-        this.showAlert('info', `พบรายการสั่งซื้อ ${res.count} รายการ จากการค้นหา "${q}"`);
-      },
-      error: () => {
-        this.showAlert('error', 'เกิดข้อผิดพลาดในการค้นหา');
-      },
-    });
-  }
-
-  filterOrdersNearby1Km() {
-    this.api.getOrdersNearby(this.MSU_LAT, this.MSU_LNG, 1.0).subscribe({
-      next: (res) => {
-        this.orders.set(res.data);
-        this.currentFilterLabel.set('ในระยะ 1 กิโลเมตร');
-        this.showAlert('info', `พบรายการสั่งซื้อ ${res.count} รายการ ในรัศมี 1 กม. จาก มมส.`);
-      },
-      error: () => {
-        this.showAlert('error', 'เกิดข้อผิดพลาดในการกรองระยะ');
-      },
-    });
-  }
-
-  filterOrdersNearby2Km() {
-    this.api.getOrdersNearby(this.MSU_LAT, this.MSU_LNG, 2.0).subscribe({
-      next: (res) => {
-        this.orders.set(res.data);
-        this.currentFilterLabel.set('ในระยะ 2 กิโลเมตร');
-        this.showAlert('info', `พบรายการสั่งซื้อ ${res.count} รายการ ในรัศมี 2 กม. จาก มมส.`);
-      },
-      error: () => {
-        this.showAlert('error', 'เกิดข้อผิดพลาดในการกรองระยะ');
-      },
-    });
-  }
-
-  selectRider(id: number) {
-    this.selectedRiderId.set(id);
-    this.loadRiderSheet(id);
-    this.closeRiderMap();
-  }
-
-  loadRiderSheet(riderId: number) {
-    this.api.getRiderSheet(riderId).subscribe({
-      next: (res) => this.currentRiderSheet.set(res.data),
-      error: () => this.currentRiderSheet.set(null),
-    });
-  }
-
-  markDelivered(orderId?: number) {
-    if (!orderId) return;
-    this.api.markStopDelivered(orderId).subscribe({
-      next: () => {
-        this.showAlert('success', `บันทึกการส่งมอบออเดอร์ #${orderId} สำเร็จ`);
-        this.loadRiderSheet(this.selectedRiderId());
-        this.loadOrders();
-        this.loadDispatchPlan();
-      },
-    });
-  }
-
-  openRiderMap(stop: RouteStop) {
-    this.activeStopForMap.set(stop);
-    setTimeout(() => {
-      this.initRiderModalMap(stop);
-    }, 200);
-  }
-
-  closeRiderMap() {
-    this.activeStopForMap.set(null);
-    if (this.riderModalMap) {
-      this.riderModalMap.remove();
-      this.riderModalMap = null;
-    }
-  }
-
-  private initRiderModalMap(stop: RouteStop) {
-    const container = document.getElementById('rider-modal-map');
-    if (!container) return;
-
-    if (this.riderModalMap) {
-      this.riderModalMap.remove();
-      this.riderModalMap = null;
-    }
-
-    const depotLat = this.MSU_LAT;
-    const depotLng = this.MSU_LNG;
-
-    this.riderModalMap = L.map('rider-modal-map').setView([stop.latitude, stop.longitude], 15);
-
-    L.tileLayer('https://tile.openstreetmap.org/{z}/{x}/{y}.png', {
-      maxZoom: 19,
-      attribution: 'OpenStreetMap contributors',
-    }).addTo(this.riderModalMap);
-
-    const depotIcon = L.divIcon({
-      html: `<div class="flex items-center justify-center w-7 h-7 bg-slate-900 text-white rounded-md text-[10px] font-bold border border-white">ร้าน</div>`,
-      className: 'depot-custom-marker',
-      iconSize: [28, 28],
-      iconAnchor: [14, 14],
-    });
-    L.marker([depotLat, depotLng], { icon: depotIcon })
-      .bindPopup('<b>ร้านส่งด่วนมื้อเที่ยง (ตลาดน้อย มมส.)</b>')
-      .addTo(this.riderModalMap);
-
-    const customerIcon = L.divIcon({
-      html: `<div class="flex items-center justify-center w-8 h-8 bg-orange-600 text-white rounded-full text-xs font-bold border-2 border-white shadow">${stop.stopOrder}</div>`,
-      className: 'stop-custom-marker',
-      iconSize: [32, 32],
-      iconAnchor: [16, 16],
-    });
-    L.marker([stop.latitude, stop.longitude], { icon: customerIcon })
-      .bindPopup(`<b>จุดที่ ${stop.stopOrder}: ${stop.customerName}</b><br>${stop.address}`)
-      .addTo(this.riderModalMap)
-      .openPopup();
-
-    // ดึงเส้นทางขับขี่ตามถนนจริงไปยังจุดส่ง (OSRM)
-    const osrmUrl = `https://router.project-osrm.org/route/v1/driving/${depotLng},${depotLat};${stop.longitude},${stop.latitude}?overview=full&geometries=geojson`;
-    fetch(osrmUrl)
-      .then((res) => res.json())
-      .then((data) => {
-        if (!this.riderModalMap) return;
-        if (data?.code === 'Ok' && data.routes?.[0]?.geometry?.coordinates?.length) {
-          const roadPoints: [number, number][] = data.routes[0].geometry.coordinates.map(
-            (pt: [number, number]) => [pt[1], pt[0]]
-          );
-          L.polyline(roadPoints, {
-            color: '#EA580C',
-            weight: 5,
-            opacity: 0.9,
-          }).addTo(this.riderModalMap);
-          this.riderModalMap.fitBounds(L.latLngBounds(roadPoints), { padding: [40, 40] });
-        } else {
-          this.drawFallbackModalPolyline(depotLat, depotLng, stop);
-        }
-      })
-      .catch(() => {
-        if (this.riderModalMap) {
-          this.drawFallbackModalPolyline(depotLat, depotLng, stop);
-        }
-      });
-
-    setTimeout(() => this.riderModalMap?.invalidateSize(), 150);
-  }
-
-  private drawFallbackModalPolyline(depotLat: number, depotLng: number, stop: RouteStop) {
-    if (!this.riderModalMap) return;
-    L.polyline(
-      [
-        [depotLat, depotLng],
-        [stop.latitude, stop.longitude],
-      ],
-      {
-        color: '#EA580C',
-        weight: 5,
-        dashArray: '6, 6',
-        opacity: 0.9,
-      }
-    ).addTo(this.riderModalMap);
-    const bounds = L.latLngBounds([
-      [depotLat, depotLng],
-      [stop.latitude, stop.longitude],
-    ]);
-    this.riderModalMap.fitBounds(bounds, { padding: [40, 40] });
-  }
-
-  private initMap() {
-    const mapContainer = document.getElementById('route-map');
-    if (!mapContainer) return;
-
-    if (this.map) {
-      this.map.invalidateSize();
-      return;
-    }
-
-    const depotLat = this.MSU_LAT;
-    const depotLng = this.MSU_LNG;
-
-    this.map = L.map('route-map', {
-      center: [depotLat, depotLng],
-      zoom: 14,
-    });
-
-    L.tileLayer('https://tile.openstreetmap.org/{z}/{x}/{y}.png', {
-      maxZoom: 19,
-      attribution: 'OpenStreetMap contributors',
-    }).addTo(this.map);
-
-    this.routeLayers = L.layerGroup().addTo(this.map);
-    this.renderRoutesOnMap();
-
-    // คลิกเลือกจุดส่งบนแผนที่
-    this.map.on('click', (e: L.LeafletMouseEvent) => {
-      this.setOrderLocationFromMap(e.latlng.lat, e.latlng.lng);
-    });
-
-    setTimeout(() => {
-      this.map?.invalidateSize();
-    }, 200);
-  }
-
-  private renderRoutesOnMap() {
-    if (!this.map || !this.routeLayers) return;
-
-    this.routeLayers.clearLayers();
-
-    const plan = this.dispatchPlan();
-    const depotLat = plan ? plan.restaurantLocation.latitude : this.MSU_LAT;
-    const depotLng = plan ? plan.restaurantLocation.longitude : this.MSU_LNG;
-
-
-    const depotIcon = L.divIcon({
-      html: `
-        <div class="flex items-center justify-center w-9 h-9 bg-slate-900 text-white rounded-lg shadow-md border-2 border-white text-xs font-bold">
-          ร้าน
-        </div>
-      `,
-      className: 'depot-custom-marker',
-      iconSize: [36, 36],
-      iconAnchor: [18, 18],
-    });
-
-    const depotMarker = L.marker([depotLat, depotLng], { icon: depotIcon }).addTo(this.routeLayers);
-    depotMarker.bindPopup(`
-      <div class="p-2 font-['Prompt',sans-serif]">
-        <h4 class="font-bold text-slate-900 text-sm">ร้านส่งด่วนมื้อเที่ยง (ตลาดน้อย มมส.)</h4>
-        <p class="text-xs text-slate-600 mt-1">จุดเริ่มต้นรับข้าวกล่อง ศูนย์อาหารตลาดน้อย มมส. ขามเรียง</p>
-        <span class="inline-block mt-2 px-2 py-0.5 bg-slate-100 text-slate-800 text-[11px] rounded">พร้อมออกส่ง: 11:30 น.</span>
-      </div>
-    `);
-
-    if (!plan || plan.routes.length === 0) {
-      this.map.setView([depotLat, depotLng], 14);
-      return;
-    }
-
-    const bounds = L.latLngBounds([[depotLat, depotLng]]);
-
-    plan.routes.forEach((route: RiderRoute, idx: number) => {
-      const color = route.color || ['#EF4444', '#10B981', '#3B82F6', '#F59E0B', '#8B5CF6', '#EC4899'][idx % 6];
-
-      const polyline = L.polyline(route.polylineCoordinates, {
-        color,
-        weight: 4,
-        opacity: 0.85,
-      }).addTo(this.routeLayers!);
-
-      polyline.bindPopup(`
-        <div class="p-1 font-['Prompt',sans-serif]">
-          <h4 class="font-bold text-sm" style="color: ${color}">${route.rider.name}</h4>
-          <p class="text-xs text-slate-600">จำนวนกล่อง: <b>${route.totalBoxes} / 10 กล่อง</b></p>
-          <p class="text-xs text-slate-600">ระยะทางรวม: <b>${route.totalDistanceKm} กม.</b> (~${route.estimatedDurationMinutes} นาที)</p>
-        </div>
-      `);
-
-      route.stops.forEach((stop) => {
-        bounds.extend([stop.latitude, stop.longitude]);
-
-        const stopIcon = L.divIcon({
-          html: `
-            <div class="flex items-center justify-center w-6 h-6 text-white font-bold text-xs rounded-full shadow-md border-2 border-white" style="background-color: ${color};">
-              ${stop.stopOrder}
-            </div>
-          `,
-          className: 'stop-custom-marker',
-          iconSize: [24, 24],
-          iconAnchor: [12, 12],
-        });
-
-        const marker = L.marker([stop.latitude, stop.longitude], { icon: stopIcon }).addTo(this.routeLayers!);
-        marker.bindPopup(`
-          <div class="p-2 font-['Prompt',sans-serif] min-w-[170px]">
-            <div class="flex items-center justify-between gap-2 border-b pb-1 mb-1">
-              <span class="font-bold text-xs text-slate-800">จุดที่ ${stop.stopOrder}</span>
-              <span class="text-[11px] font-semibold px-1.5 py-0.2 rounded text-white" style="background-color: ${color}">${stop.boxCount} กล่อง</span>
-            </div>
-            <p class="font-medium text-xs text-slate-900">${stop.customerName}</p>
-            <p class="text-[11px] text-slate-500">${stop.address}</p>
-            <p class="text-[11px] text-slate-500">โทร: ${stop.phone}</p>
-            <p class="text-xs text-slate-700 font-medium mt-1">เวลาถึงโดยประมาณ: ${stop.estimatedArrival}</p>
-            <div class="mt-2 text-center">
-              <span class="text-[10px] px-2 py-0.5 rounded-full ${stop.status === 'delivered' ? 'bg-emerald-100 text-emerald-800' : 'bg-slate-100 text-slate-700'}">
-                ${stop.status === 'delivered' ? 'ส่งมอบแล้ว' : 'รอดำเนินการ'}
-              </span>
-            </div>
-          </div>
-        `);
-      });
-    });
-
-    this.map.fitBounds(bounds, { padding: [40, 40] });
-    setTimeout(() => this.map?.invalidateSize(), 150);
+  getGoogleMapsUrl(order: Order): string {
+    const query = order.customer?.address?.trim() || 'มหาวิทยาลัยมหาสารคาม ขามเรียง';
+    return `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(query)}`;
   }
 }
