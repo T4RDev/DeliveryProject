@@ -1,6 +1,6 @@
-# ระบบจัดเส้นทางและแบ่งงานไรเดอร์ (ส่งด่วนมื้อเที่ยง)
+# ระบบจัดการออเดอร์ข้าวกล่อง (ส่งด่วนมื้อเที่ยง)
 
-> **Project Demo** — ระบบจัดการออเดอร์ข้าวกล่องและวางแผนเส้นทางส่งอาหารสำหรับไรเดอร์  
+> **Project Demo** — ระบบจัดการออเดอร์ข้าวกล่องและนำทางจัดส่งด้วย Google Maps  
 > ศูนย์กลาง: **ร้านตลาดน้อย มหาวิทยาลัยมหาสารคาม (มมส. ขามเรียง)**
 
 ---
@@ -9,7 +9,7 @@
 
 ```
 Project_AdvWeb2/
-├── Front/          # Angular 22 + Tailwind CSS + Leaflet Map (Frontend)
+├── Front/          # Angular 22 + Tailwind CSS + Google Maps (Frontend)
 ├── Back/           # Node.js + Express + TypeScript (Backend API)
 ├── render.yaml     # Config Deploy Backend บน Render.com
 └── README.md
@@ -19,11 +19,12 @@ Project_AdvWeb2/
 
 ## ฟีเจอร์ระบบ
 
-| หน้า | ฟีเจอร์ |
-|------|---------|
-| **แดชบอร์ดและแผนที่** | สรุปออเดอร์, แผนที่ Leaflet แสดงเส้นทางไรเดอร์แยกสี, จัดเส้นทางอัตโนมัติ (CVRP) |
-| **จัดการออเดอร์และลูกค้า** | เพิ่มออเดอร์, ค้นหาลูกค้าเดิมด้วยเบอร์โทร, กรองระยะ 1/2 กม., สุ่ม 24 ออเดอร์ |
-| **หน้าจอไรเดอร์** | ใบงานประจำวัน, แผนที่นำทางแบบ in-page, อัปเดตสถานะส่งมอบ |
+| ส่วนงาน | ฟีเจอร์ |
+|---------|---------|
+| **จัดการออเดอร์และลูกค้า** | เพิ่มออเดอร์, ค้นหาลูกค้าเดิมด้วยเบอร์โทร, สุ่มสถานที่จริงใน มมส., กรองระยะ 1/2 กม., สุ่ม 24 ออเดอร์ |
+| **นำทาง Google Maps** | ปุ่มเปิด Google Maps นำทางตรงจากร้านไปยังบ้านลูกค้าทันทีในคลิกเดียว |
+| **สถานะการจัดส่ง** | สรุปกล่องข้าว, ปรับจำนวนกล่อง, อัปเดตสถานะ รอดำเนินการ / จัดส่งแล้ว |
+
 
 ---
 
@@ -157,6 +158,7 @@ git push
 ```
 GET    /api                                    Health Check
 GET    /api/customers                          รายชื่อลูกค้าทั้งหมด
+GET    /api/customers/landmarks                รายชื่อสถานที่สำคัญใน มมส.
 GET    /api/customers/search?q=...             ค้นหาลูกค้า
 GET    /api/customers/phone/:phone             ค้นหาด้วยเบอร์โทร
 GET    /api/customers/nearby?lat=&lng=&radius= ลูกค้าในรัศมี
@@ -164,16 +166,10 @@ GET    /api/customers/nearby?lat=&lng=&radius= ลูกค้าในรัศ
 GET    /api/orders                             รายการออเดอร์ (รองรับ ?q=...)
 GET    /api/orders/nearby?lat=&lng=&radius=    ออเดอร์ในรัศมี
 POST   /api/orders                             สร้างออเดอร์ใหม่
-PUT    /api/orders/:id                         แก้ไขออเดอร์
+PUT    /api/orders/:id                         แก้ไขออเดอร์ (กล่อง, สถานะ)
 DELETE /api/orders/:id                         ลบออเดอร์
 POST   /api/orders/mock                        สร้างข้อมูลตัวอย่าง 24 รายการ
 DELETE /api/orders/clear                       ล้างออเดอร์ทั้งหมด
-
-POST   /api/dispatch/optimize                  จัดเส้นทางอัตโนมัติ (CVRP)
-GET    /api/dispatch/plan                      แผนเส้นทางปัจจุบัน
-GET    /api/dispatch/riders                    รายชื่อไรเดอร์
-GET    /api/dispatch/rider/:id/sheet           ใบงานของไรเดอร์คนนั้น
-PATCH  /api/dispatch/stops/:orderId/deliver    อัปเดตสถานะส่งมอบ
 ```
 
 ---
@@ -182,9 +178,10 @@ PATCH  /api/dispatch/stops/:orderId/deliver    อัปเดตสถานะ
 
 | ส่วน | เทคโนโลยี |
 |------|-----------|
-| Frontend | Angular 22, Tailwind CSS v4, Leaflet.js |
+| Frontend | Angular 22, Tailwind CSS v4, Google Maps Integration |
 | Backend | Node.js, Express.js, TypeScript |
 | Database | In-Memory (เหมาะสำหรับ Demo) |
-| Map | OpenStreetMap ผ่าน Leaflet.js |
+| Map & Nav | Google Maps (Navigation & Location API URLs) |
 | Deploy Frontend | Vercel (ฟรี) |
 | Deploy Backend | Render.com (ฟรี) |
+

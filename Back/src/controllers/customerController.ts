@@ -44,32 +44,6 @@ customerRouter.get('/phone/:phone', (req: Request, res: Response) => {
   }
 });
 
-customerRouter.get('/nearby', (req: Request, res: Response) => {
-  try {
-    const lat = parseFloat(req.query.lat as string);
-    const lng = parseFloat(req.query.lng as string);
-    const radius = parseFloat(req.query.radius as string) || 1.0;
-
-    if (isNaN(lat) || isNaN(lng)) {
-      return res.status(400).json({
-        success: false,
-        message: 'กรุณาระบุพิกัด lat และ lng ให้ถูกต้อง เช่น ?lat=16.2443&lng=103.2504&radius=1',
-      });
-    }
-
-    const customers = db.getCustomersNearby(lat, lng, radius);
-    res.json({
-      success: true,
-      center: { lat, lng },
-      radiusKm: radius,
-      count: customers.length,
-      data: customers,
-    });
-  } catch (error) {
-    res.status(500).json({ success: false, message: 'Internal server error', error });
-  }
-});
-
 customerRouter.get('/landmarks', (req: Request, res: Response) => {
   try {
     const landmarks = db.getMsuLandmarks();
@@ -99,36 +73,24 @@ customerRouter.get('/:id', (req: Request, res: Response) => {
 customerRouter.post('/', (req: Request, res: Response) => {
   try {
     const { firstName, lastName, phone, address } = req.body;
-    let { latitude, longitude } = req.body;
 
     if (!firstName || !lastName || !phone || !address) {
       return res.status(400).json({
         success: false,
-        message: 'กรุณากรอกข้อมูลให้ครบถ้วน: firstName, lastName, phone, address',
+        message: 'กรุณากรอกข้อมูลให้ครบถ้วน: ชื่อ, นามสกุล, เบอร์โทร, ที่อยู่จัดส่ง',
       });
     }
 
-    if (latitude === undefined || longitude === undefined || isNaN(parseFloat(latitude)) || isNaN(parseFloat(longitude))) {
-      const resolved = db.resolveAddressLocation(address);
-      latitude = resolved.latitude;
-      longitude = resolved.longitude;
-    } else {
-      latitude = parseFloat(latitude);
-      longitude = parseFloat(longitude);
-    }
-
     const newCustomer = db.createCustomer({
-      firstName,
-      lastName,
-      phone,
-      address,
-      latitude,
-      longitude,
+      firstName: firstName.trim(),
+      lastName: lastName.trim(),
+      phone: phone.trim(),
+      address: address.trim(),
     });
 
     res.status(201).json({
       success: true,
-      message: 'เพิ่มข้อมูลลูกค้าเรียบร้อยแล้ว',
+      message: 'บันทึกข้อมูลลูกค้าเรียบร้อยแล้ว',
       data: newCustomer,
     });
   } catch (error) {
@@ -168,4 +130,3 @@ customerRouter.delete('/:id', (req: Request, res: Response) => {
     res.status(500).json({ success: false, message: 'Internal server error', error });
   }
 });
-

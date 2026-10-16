@@ -1,16 +1,1 @@
 @import 'tailwindcss';
-@import 'leaflet/dist/leaflet.css';
-
-#route-map {
-  width: 100% !important;
-  height: 480px !important;
-  min-height: 480px !important;
-  display: block !important;
-}
-
-#rider-modal-map {
-  width: 100% !important;
-  height: 320px !important;
-  min-height: 320px !important;
-  display: block !important;
-}

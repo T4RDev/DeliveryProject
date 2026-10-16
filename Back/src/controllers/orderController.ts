@@ -1,5 +1,5 @@
 import { Request, Response, Router } from 'express';
-import { db, RESTAURANT_DEPOT } from '../db/database';
+import { db } from '../db/database';
 
 export const orderRouter = Router();
 
@@ -19,32 +19,10 @@ orderRouter.get('/', (req: Request, res: Response) => {
   }
 });
 
-orderRouter.get('/nearby', (req: Request, res: Response) => {
-  try {
-    const lat = parseFloat(req.query.lat as string) || RESTAURANT_DEPOT.latitude;
-    const lng = parseFloat(req.query.lng as string) || RESTAURANT_DEPOT.longitude;
-    const radius = parseFloat(req.query.radius as string) || 2.0;
-
-    const orders = db.getOrdersNearby(lat, lng, radius);
-    const totalBoxes = orders.reduce((sum, o) => sum + o.boxCount, 0);
-
-    res.json({
-      success: true,
-      center: { lat, lng },
-      radiusKm: radius,
-      count: orders.length,
-      totalBoxes,
-      data: orders,
-    });
-  } catch (error) {
-    res.status(500).json({ success: false, message: 'Internal server error', error });
-  }
-});
-
 orderRouter.post('/mock', (req: Request, res: Response) => {
   try {
     const count = parseInt(req.body.count as string) || 24;
-    const safeCount = Math.min(Math.max(10, count), 40);
+    const safeCount = Math.min(Math.max(5, count), 50);
     const generated = db.generateMockOrders(safeCount);
     const totalBoxes = generated.reduce((sum, o) => sum + o.boxCount, 0);
 
@@ -61,18 +39,6 @@ orderRouter.post('/mock', (req: Request, res: Response) => {
 });
 
 orderRouter.delete('/clear', (req: Request, res: Response) => {
-  try {
-    db.clearOrders();
-    res.json({
-      success: true,
-      message: 'ล้างรายการสั่งซื้อทั้งหมดเรียบร้อยแล้ว',
-    });
-  } catch (error) {
-    res.status(500).json({ success: false, message: 'Internal server error', error });
-  }
-});
-
-orderRouter.delete('/mock', (req: Request, res: Response) => {
   try {
     db.clearOrders();
     res.json({

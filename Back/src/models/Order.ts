@@ -1,6 +1,6 @@
 import { Customer } from './Customer';
 
-export type OrderStatus = 'pending' | 'assigned' | 'in_transit' | 'delivered' | 'cancelled';
+export type OrderStatus = 'pending' | 'in_transit' | 'delivered' | 'cancelled';
 
 export interface Order {
   id: number;
@@ -12,5 +12,4 @@ export interface Order {
   note?: string;
   customer?: Customer;
   deliveredAt?: string;
-  assignedRiderId?: number;
 }
