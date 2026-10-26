@@ -50,6 +50,29 @@ orderRouter.delete('/clear', (req: Request, res: Response) => {
   }
 });
 
+// ค้นหารายการสั่งซื้อในระยะที่กำหนด (HW-5: ค้นหาในระยะ 2 กม.)
+orderRouter.get('/nearby', (req: Request, res: Response) => {
+  try {
+    const lat = parseFloat(req.query.lat as string) || 16.2465;
+    const lng = parseFloat(req.query.lng as string) || 103.2510;
+    const radius = parseFloat(req.query.radius as string) || 2.0;
+
+    const orders = db.findOrdersNearby(lat, lng, radius);
+    const totalBoxes = orders.reduce((sum, o) => sum + o.boxCount, 0);
+
+    res.json({
+      success: true,
+      center: { lat, lng },
+      radiusKm: radius,
+      count: orders.length,
+      totalBoxes,
+      data: orders,
+    });
+  } catch (error) {
+    res.status(500).json({ success: false, message: 'Internal server error', error });
+  }
+});
+
 orderRouter.get('/:id', (req: Request, res: Response) => {
   try {
     const id = parseInt(req.params.id);

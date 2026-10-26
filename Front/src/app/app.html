@@ -1,37 +1,41 @@
 <div class="min-h-screen bg-slate-50 flex flex-col font-['Prompt',sans-serif] text-slate-800">
 
-  <!-- แถบด้านบน -->
-  <header class="bg-slate-900 text-white shadow-sm sticky top-0 z-50">
+  <!-- แถบด้านบน (Header & Navigation) -->
+  <header class="bg-slate-900 text-white shadow-md sticky top-0 z-50">
     <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
       <div class="flex items-center justify-between h-16">
 
+        <!-- โลโก้และชื่อร้าน -->
         <div class="flex items-center space-x-3">
           <img src="favicon.svg" alt="Logo" class="w-8 h-8 rounded-md object-cover bg-white p-1">
           <div>
-            <div class="flex items-center gap-2">
-              <span class="font-bold text-base md:text-lg">ระบบจัดการออเดอร์</span>
-              <span class="text-xs px-2 py-0.5 rounded bg-slate-800 text-slate-300 border border-slate-700">ตลาดน้อย
-                มมส.</span>
-            </div>
-            <p class="text-xs text-slate-400">ร้านส่งด่วนมื้อเที่ยง มหาวิทยาลัยมหาสารคาม</p>
+            <span class="font-bold text-base md:text-lg">ระบบส่งด่วนมื้อเที่ยง</span>
           </div>
         </div>
 
-        <div class="flex items-center gap-3">
-          <a href="https://www.google.com/maps/search/?api=1&query=%E0%B8%A8%E0%B8%B9%E0%B8%99%E0%B8%A2%E0%B9%8C%E0%B8%AD%E0%B8%B2%E0%B8%AB%E0%B8%B2%E0%B8%A3%E0%B8%95%E0%B8%A5%E0%B8%B2%E0%B8%94%E0%B8%99%E0%B9%89%E0%B8%AD%E0%B8%A2+%E0%B8%A1%E0%B8%AB%E0%B8%B2%E0%B8%A7%E0%B8%B4%E0%B8%97%E0%B8%A2%E0%B8%B2%E0%B8%A5%E0%B8%B1%E0%B8%A2%E0%B8%A1%E0%B8%AB%E0%B8%B2%E0%B8%AA%E0%B8%B2%E0%B8%A3%E0%B8%84%E0%B8%B2%E0%B8%A1"
-            target="_blank"
-            class="inline-flex items-center gap-1.5 px-3 py-1.5 bg-slate-800 hover:bg-slate-700 border border-slate-700 rounded-lg text-xs text-slate-200 transition-colors">
-            <svg class="w-3.5 h-3.5 text-rose-400" viewBox="0 0 24 24" fill="currentColor">
-              <path
-                d="M12 2C8.13 2 5 5.13 5 9c0 5.25 7 13 7 13s7-7.75 7-13c0-3.87-3.13-7-7-7zm0 9.5c-1.38 0-2.5-1.12-2.5-2.5s1.12-2.5 2.5-2.5 2.5 1.12 2.5 2.5-1.12 2.5-2.5 2.5z" />
-            </svg>
-            <span>พิกัดร้าน</span>
-          </a>
+        <!-- ปุ่มสลับหน้าจอ (โหมดเจ้าของร้าน vs โหมดไรเดอร์มือถือ) -->
+        <div class="flex items-center gap-2">
+          <div class="inline-flex bg-slate-800 p-1 rounded-lg border border-slate-700">
+            <button type="button" (click)="switchTab('owner')"
+              [ngClass]="activeTab() === 'owner' ? 'bg-orange-600 text-white shadow-sm' : 'text-slate-300 hover:text-white'"
+              class="px-3 py-1.5 rounded-md text-xs font-medium transition-all flex items-center gap-1.5 cursor-pointer">
+              <span class="hidden sm:inline">หน้าจอเจ้าของร้าน</span>
+              <span class="sm:hidden">เจ้าของร้าน</span>
+            </button>
 
-          <div class="flex items-center gap-1.5 text-xs text-slate-300">
+            <button type="button" (click)="switchTab('rider')"
+              [ngClass]="activeTab() === 'rider' ? 'bg-orange-600 text-white shadow-sm' : 'text-slate-300 hover:text-white'"
+              class="px-3 py-1.5 rounded-md text-xs font-medium transition-all flex items-center gap-1.5 cursor-pointer">
+              <span class="hidden sm:inline">หน้าจอไรเดอร์ (มือถือ)</span>
+              <span class="sm:hidden">ไรเดอร์</span>
+            </button>
+          </div>
+
+          <!-- สถานะเซิร์ฟเวอร์ -->
+          <div class="flex items-center gap-1.5 text-xs text-slate-300 ml-2">
             <span class="w-2.5 h-2.5 rounded-full"
               [ngClass]="backendConnected() ? 'bg-emerald-500' : 'bg-rose-500'"></span>
-            <span class="hidden sm:inline">{{ backendConnected() ? 'เชื่อมต่อแล้ว' : 'ออฟไลน์' }}</span>
+            <span class="hidden md:inline">{{ backendConnected() ? 'เซิร์ฟเวอร์พร้อม' : 'ออฟไลน์' }}</span>
           </div>
         </div>
 
@@ -39,122 +43,220 @@
     </div>
   </header>
 
-  <!-- ข้อความแจ้งเตือน -->
+  <!-- กล่องข้อความแจ้งเตือน (Alert Toast) -->
   <div *ngIf="alertMessage()" class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 mt-4 w-full">
     <div [ngClass]="{
       'bg-emerald-50 border-emerald-300 text-emerald-800': alertMessage()?.type === 'success',
       'bg-rose-50 border-rose-300 text-rose-800': alertMessage()?.type === 'error',
       'bg-slate-100 border-slate-300 text-slate-800': alertMessage()?.type === 'info'
-    }" class="p-3 rounded-lg border flex items-center justify-between text-xs md:text-sm">
+    }" class="p-3 rounded-lg border flex items-center justify-between text-xs md:text-sm shadow-sm">
       <span>{{ alertMessage()?.text }}</span>
       <button (click)="alertMessage.set(null)"
-        class="text-xs text-slate-400 hover:text-slate-600 ml-4 font-medium">ปิด</button>
+        class="text-xs text-slate-400 hover:text-slate-600 ml-4 font-medium cursor-pointer">ปิด</button>
     </div>
   </div>
 
 
-  <main class="flex-1 max-w-7xl w-full mx-auto p-4 sm:p-6 lg:p-8 space-y-5">
+  <!-- ======================================================== -->
+  <!-- 1. แท็บหน้าจอเจ้าของร้าน (STORE OWNER DASHBOARD & MAP) -->
+  <!-- ======================================================== -->
+  <main *ngIf="activeTab() === 'owner'" class="flex-1 max-w-7xl w-full mx-auto p-4 sm:p-6 lg:p-8 space-y-6">
 
+    <!-- แถบสถิติภาพรวมออเดอร์ -->
     <div class="grid grid-cols-2 sm:grid-cols-4 gap-3">
-      <div class="bg-white p-4 rounded-lg border border-slate-200">
+      <div class="bg-white p-4 rounded-xl border border-slate-200 shadow-xs">
         <p class="text-xs text-slate-500 font-medium">ออเดอร์ทั้งหมด</p>
         <p class="text-2xl font-bold text-slate-800 mt-1">{{ orders().length }} <span
             class="text-xs font-normal text-slate-500">รายการ</span></p>
       </div>
 
-      <div class="bg-white p-4 rounded-lg border border-slate-200">
+      <div class="bg-white p-4 rounded-xl border border-slate-200 shadow-xs">
         <p class="text-xs text-slate-500 font-medium">จำนวนข้าวกล่องรวม</p>
-        <p class="text-2xl font-bold text-slate-800 mt-1">{{ totalBoxes() }} <span
+        <p class="text-2xl font-bold text-orange-600 mt-1">{{ totalBoxes() }} <span
             class="text-xs font-normal text-slate-500">กล่อง</span></p>
       </div>
 
-      <div class="bg-white p-4 rounded-lg border border-slate-200">
-        <p class="text-xs text-amber-700 font-medium">รอจัดส่ง</p>
+      <div class="bg-white p-4 rounded-xl border border-slate-200 shadow-xs">
+        <p class="text-xs text-amber-700 font-medium">รอจัดส่ง (รอบเที่ยง)</p>
         <p class="text-2xl font-bold text-amber-600 mt-1">{{ pendingCount() }} <span
             class="text-xs font-normal text-slate-500">รายการ</span></p>
       </div>
 
-      <div class="bg-white p-4 rounded-lg border border-slate-200">
-        <p class="text-xs text-emerald-700 font-medium">จัดส่งแล้ว</p>
+      <div class="bg-white p-4 rounded-xl border border-slate-200 shadow-xs">
+        <p class="text-xs text-emerald-700 font-medium">จัดส่งเสร็จสิ้น</p>
         <p class="text-2xl font-bold text-emerald-600 mt-1">{{ deliveredCount() }} <span
             class="text-xs font-normal text-slate-500">รายการ</span></p>
       </div>
     </div>
 
 
-    <div class="bg-white p-4 rounded-lg border border-slate-200 flex flex-wrap items-center justify-between gap-3">
-      <div>
-        <h2 class="font-semibold text-sm text-slate-800">จัดการรายการสั่งซื้อข้าวกล่อง</h2>
-        <p class="text-xs text-slate-500">บันทึกออเดอร์ ดูที่อยู่จัดส่ง และเปิดดูสถานที่ผ่าน Google Maps</p>
+    <!-- แถบปุ่มจัดการอัจฉริยะ (Smart Route Optimization Action) -->
+    <div class="bg-linear-to-r from-orange-600 to-amber-600 rounded-xl p-5 text-white shadow-md flex flex-col md:flex-row items-center justify-between gap-4">
+      <div class="space-y-1 text-center md:text-left">
+        <div class="flex items-center gap-2 justify-center md:justify-start">
+          <h2 class="text-lg font-bold">จัดเส้นทางและแบ่งงานไรเดอร์อัจฉริยะ</h2>
+        </div>
+        <p class="text-xs text-orange-100 max-w-xl">
+          จำกัดกระเป๋าคันละไม่เกิน 10 กล่อง • หาเส้นทางสั้นสุดประหยัดน้ำมัน • ส่งถึงมือก่อน 12:30 น. (เซฟค่าปรับ 20 บาท/ออเดอร์)
+        </p>
       </div>
 
-      <div class="flex items-center gap-2">
-        <button (click)="mockOrders(24)" [disabled]="isLoading()"
-          class="px-3 py-1.5 bg-orange-600 hover:bg-orange-700 text-white text-xs font-medium rounded transition-colors cursor-pointer">
-          + สุ่มข้อมูล 24 รายการ
+      <div class="flex items-center gap-2.5">
+        <button (click)="optimizeDeliveryRoutes()" [disabled]="isOptimizing() || orders().length === 0"
+          class="px-5 py-2.5 bg-white text-orange-700 hover:bg-orange-50 font-bold text-xs md:text-sm rounded-lg shadow-sm transition-all flex items-center gap-2 cursor-pointer disabled:opacity-50">
+          <span>{{ isOptimizing() ? 'กำลังคำนวณเส้นทาง...' : 'กดปุ่มจัดเส้นทางทันที' }}</span>
         </button>
-        <button (click)="clearOrders()" [disabled]="isLoading()"
-          class="px-3 py-1.5 bg-slate-100 hover:bg-slate-200 text-slate-700 text-xs font-medium rounded transition-colors cursor-pointer border border-slate-200">
-          ล้างทั้งหมด
+
+        <button (click)="mockOrders(24)" [disabled]="isLoading()"
+          class="px-3.5 py-2.5 bg-orange-700/60 hover:bg-orange-700 text-white text-xs font-medium rounded-lg transition-colors border border-orange-400/40 cursor-pointer">
+          สุ่มออเดอร์ 24 รายการ
         </button>
       </div>
     </div>
 
 
-    <div class="grid grid-cols-1 lg:grid-cols-3 gap-5">
-
-
-      <div class="bg-white p-5 rounded-lg border border-slate-200 space-y-4 h-fit">
-        <div class="border-b border-slate-100 pb-2">
-          <h3 class="font-semibold text-sm text-slate-800">เพิ่มออเดอร์ใหม่</h3>
-          <p class="text-xs text-slate-500">กรอกข้อมูลผู้รับและสถานที่จัดส่ง</p>
+    <!-- ส่วนสรุปผลการจัดเส้นทาง (เมื่อกดจัดเส้นทางแล้ว) -->
+    <div *ngIf="routingResult() as result" class="bg-white p-5 rounded-xl border border-slate-200 shadow-xs space-y-4">
+      <div class="flex flex-wrap items-center justify-between gap-2 border-b border-slate-100 pb-3">
+        <div>
+          <h3 class="font-bold text-sm text-slate-800 flex items-center gap-2">
+            <span>ผลลัพธ์การจัดเส้นทางสำหรับไรเดอร์</span>
+            <span class="bg-emerald-100 text-emerald-800 text-[11px] px-2 py-0.5 rounded-full font-semibold">
+              {{ result.summary.allOnTime ? 'ทันเวลา 12:30 น. ทุกคัน' : 'มีคันที่เสี่ยงเลท' }}
+            </span>
+          </h3>
+          <p class="text-xs text-slate-500 mt-0.5">
+            ใช้ไรเดอร์ทั้งหมด <strong>{{ result.summary.totalRiders }} คัน</strong> | ข้าวกล่องรวม <strong>{{ result.summary.totalBoxes }} กล่อง</strong> | ระยะทางรวม <strong>{{ result.summary.totalDistanceKm }} กม.</strong> | ค่าปรับชดเชย: <strong>{{ result.summary.totalLateFine }} บาท</strong>
+          </p>
         </div>
 
+        <!-- ตัวกรองเลือกดูเส้นทางไรเดอร์รายคน -->
+        <div class="flex items-center gap-1.5 flex-wrap">
+          <button (click)="selectRiderFilter(null)"
+            [ngClass]="selectedRiderId() === null ? 'bg-slate-900 text-white font-semibold' : 'bg-slate-100 text-slate-700 hover:bg-slate-200'"
+            class="px-3 py-1 rounded-md text-xs transition-colors cursor-pointer">
+            แสดงทุกคัน ({{ result.riders.length }})
+          </button>
+
+          <button *ngFor="let r of result.riders" (click)="selectRiderFilter(r.riderId)"
+            [style.borderColor]="r.color"
+            [ngClass]="selectedRiderId() === r.riderId ? 'text-white font-semibold' : 'bg-white text-slate-700 hover:bg-slate-50 border'"
+            [style.backgroundColor]="selectedRiderId() === r.riderId ? r.color : ''"
+            class="px-3 py-1 rounded-md text-xs transition-all flex items-center gap-1 cursor-pointer">
+            <span class="w-2 h-2 rounded-full inline-block" [style.backgroundColor]="r.color"></span>
+            <span>{{ r.riderName.split(' ')[0] }} ({{ r.totalBoxes }} กล่อง)</span>
+          </button>
+        </div>
+      </div>
+
+      <!-- การ์ดสรุปของแต่ละไรเดอร์ -->
+      <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
+        <div *ngFor="let r of result.riders" (click)="selectRiderFilter(r.riderId)"
+          [ngClass]="selectedRiderId() === r.riderId ? 'ring-2 ring-offset-1 ring-slate-800' : ''"
+          class="p-3.5 rounded-lg border border-slate-200 hover:border-slate-400 transition-all cursor-pointer bg-slate-50/50">
+          <div class="flex items-center justify-between mb-1.5">
+            <div class="flex items-center gap-2">
+              <span class="w-3.5 h-3.5 rounded-full" [style.backgroundColor]="r.color"></span>
+              <span class="font-bold text-xs text-slate-800">{{ r.riderName }}</span>
+            </div>
+            <span class="text-[11px] px-1.5 py-0.5 rounded font-mono font-bold"
+              [ngClass]="r.totalBoxes <= 10 ? 'bg-emerald-100 text-emerald-800' : 'bg-rose-100 text-rose-800'">
+              {{ r.totalBoxes }}/{{ r.maxCapacity }} กล่อง
+            </span>
+          </div>
+
+          <div class="text-[11px] text-slate-600 space-y-0.5">
+            <p>จำนวนส่ง: <strong>{{ r.orderCount }} จุด</strong></p>
+            <p>ระยะทางวิ่ง: <strong>{{ r.totalDistanceKm }} กม.</strong></p>
+            <p>เวลาประมาณการ: <strong>~{{ r.estimatedMinutes }} นาที</strong> (ถึง ~{{ r.estimatedArrivalTime }})</p>
+          </div>
+        </div>
+      </div>
+    </div>
+
+
+    <!-- แผนที่ขนาดใหญ่ (Big Interactive Map - Leaflet) -->
+    <div class="bg-white p-4 rounded-xl border border-slate-200 shadow-xs space-y-3">
+      <div class="flex flex-wrap items-center justify-between gap-2 border-b border-slate-100 pb-2">
         <div>
-          <label class="block text-xs font-medium text-slate-700 mb-1">เบอร์โทรศัพท์</label>
+          <h3 class="font-bold text-sm text-slate-800 flex items-center gap-2">
+            <span>แผนที่เส้นทางจัดส่ง (ตามแนวถนนจริง)</span>
+            <span class="bg-emerald-100 text-emerald-800 text-[11px] px-2 py-0.5 rounded-full font-semibold border border-emerald-300">
+              เลี้ยวตามถนนจริง
+            </span>
+          </h3>
+          <p class="text-xs text-slate-500">เส้นทางคำนวณผ่านโครงข่ายถนนจริง ไม่ตัดผ่านตึก • คลิกที่หมุดลูกค้าเพื่อดูข้อมูลหรือนำทาง</p>
+        </div>
+
+        <div class="flex items-center gap-2 text-xs">
+          <span class="inline-flex items-center gap-1">
+            <span class="w-3 h-3 rounded-full bg-amber-500 inline-block border border-white"></span>
+            <span class="text-slate-600">จุดศูนย์กลางร้าน (ตลาดน้อย)</span>
+          </span>
+        </div>
+      </div>
+
+      <!-- คอนเทนเนอร์แสดงแผนที่ Leaflet -->
+      <div id="deliveryMap" class="w-full h-[460px] rounded-lg border border-slate-200 z-10"></div>
+    </div>
+
+
+    <!-- ส่วนบันทึกออเดอร์ใหม่ และ ตารางรายการออเดอร์ -->
+    <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+
+      <!-- ฟอร์มเพิ่มออเดอร์ใหม่ -->
+      <div class="bg-white p-5 rounded-xl border border-slate-200 shadow-xs space-y-4 h-fit">
+        <div class="border-b border-slate-100 pb-2">
+          <h3 class="font-bold text-sm text-slate-800">เพิ่มออเดอร์ใหม่</h3>
+          <p class="text-xs text-slate-500">กรอกข้อมูลผู้รับและสถานที่จัดส่ง (ลูกค้าเก่าใส่เบอร์โทรก็เจอ)</p>
+        </div>
+
+        <!-- ค้นหาจากเบอร์โทร -->
+        <div>
+          <label class="block text-xs font-semibold text-slate-700 mb-1">เบอร์โทรศัพท์ (ค้นหาลูกค้าเก่า)</label>
           <div class="flex gap-1.5">
             <input type="text" [(ngModel)]="searchPhoneQuery" (keyup.enter)="lookupCustomerByPhone()"
               placeholder="เช่น 0891234567"
-              class="flex-1 px-3 py-1.5 text-xs border border-slate-300 rounded focus:outline-none focus:border-slate-600" />
+              class="flex-1 px-3 py-1.5 text-xs border border-slate-300 rounded-lg focus:outline-none focus:border-orange-500" />
             <button (click)="lookupCustomerByPhone()"
-              class="px-3 py-1.5 bg-slate-800 hover:bg-slate-900 text-white text-xs rounded transition-colors cursor-pointer">
+              class="px-3 py-1.5 bg-slate-900 hover:bg-slate-800 text-white text-xs rounded-lg transition-colors cursor-pointer font-medium">
               ค้นหา
             </button>
           </div>
-          <p *ngIf="phoneLookupResult()" class="text-xs mt-1 text-slate-600">
+          <p *ngIf="phoneLookupResult()" class="text-xs mt-1 text-slate-600 font-medium">
             {{ phoneLookupResult() }}
           </p>
         </div>
 
         <div class="grid grid-cols-2 gap-2">
           <div>
-            <label class="block text-xs font-medium text-slate-700 mb-1">ชื่อ</label>
+            <label class="block text-xs font-semibold text-slate-700 mb-1">ชื่อ</label>
             <input type="text" [(ngModel)]="newOrderForm.firstName" placeholder="ชื่อ"
-              class="w-full px-3 py-1.5 text-xs border border-slate-300 rounded focus:outline-none focus:border-slate-600" />
+              class="w-full px-3 py-1.5 text-xs border border-slate-300 rounded-lg focus:outline-none focus:border-orange-500" />
           </div>
           <div>
-            <label class="block text-xs font-medium text-slate-700 mb-1">นามสกุล</label>
+            <label class="block text-xs font-semibold text-slate-700 mb-1">นามสกุล</label>
             <input type="text" [(ngModel)]="newOrderForm.lastName" placeholder="นามสกุล"
-              class="w-full px-3 py-1.5 text-xs border border-slate-300 rounded focus:outline-none focus:border-slate-600" />
+              class="w-full px-3 py-1.5 text-xs border border-slate-300 rounded-lg focus:outline-none focus:border-orange-500" />
           </div>
         </div>
 
         <div>
-          <label class="block text-xs font-medium text-slate-700 mb-1">เบอร์ติดต่อ</label>
+          <label class="block text-xs font-semibold text-slate-700 mb-1">เบอร์ติดต่อ</label>
           <input type="text" [(ngModel)]="newOrderForm.phone" placeholder="เบอร์โทรศัพท์"
-            class="w-full px-3 py-1.5 text-xs border border-slate-300 rounded focus:outline-none focus:border-slate-600" />
+            class="w-full px-3 py-1.5 text-xs border border-slate-300 rounded-lg focus:outline-none focus:border-orange-500" />
         </div>
 
         <div>
           <div class="flex items-center justify-between mb-1">
-            <label class="block text-xs font-medium text-slate-700">สถานที่ใน มมส. ขามเรียง</label>
+            <label class="block text-xs font-semibold text-slate-700">สถานที่จัดส่ง</label>
             <button type="button" (click)="pickRandomMsuLocation()"
-              class="text-xs text-orange-600 hover:underline cursor-pointer">
+              class="text-xs text-orange-600 hover:underline cursor-pointer font-medium">
               สุ่มสถานที่
             </button>
           </div>
           <select (change)="onSelectLandmark($any($event.target).value)" [value]="selectedLandmarkName()"
-            class="w-full px-2.5 py-1.5 text-xs border border-slate-300 rounded bg-white focus:outline-none focus:border-slate-600 cursor-pointer">
+            class="w-full px-2.5 py-1.5 text-xs border border-slate-300 rounded-lg bg-white focus:outline-none focus:border-orange-500 cursor-pointer">
             <option *ngFor="let lm of msuLandmarks()" [value]="lm.name">
               [{{ lm.category }}] {{ lm.name }}
             </option>
@@ -162,74 +264,80 @@
         </div>
 
         <div>
-          <label class="block text-xs font-medium text-slate-700 mb-1">ที่อยู่จัดส่ง / จุดนัดรับ</label>
+          <label class="block text-xs font-semibold text-slate-700 mb-1">ที่อยู่จัดส่ง / จุดนัดรับ</label>
           <textarea [(ngModel)]="newOrderForm.address" rows="2" placeholder="ระบุอาคาร หอพัก ชั้น หรือคณะ..."
-            class="w-full px-3 py-1.5 text-xs border border-slate-300 rounded focus:outline-none focus:border-slate-600"></textarea>
+            class="w-full px-3 py-1.5 text-xs border border-slate-300 rounded-lg focus:outline-none focus:border-orange-500"></textarea>
         </div>
 
         <div>
           <div class="flex justify-between items-center mb-1">
-            <label class="text-xs font-medium text-slate-700">จำนวนข้าวกล่อง</label>
-            <span class="text-xs font-semibold text-slate-800">{{ newOrderForm.boxCount }} กล่อง</span>
+            <label class="text-xs font-semibold text-slate-700">จำนวนข้าวกล่อง (ไม่เกิน 3 กล่อง)</label>
+            <span class="text-xs font-bold text-orange-600">{{ newOrderForm.boxCount }} กล่อง</span>
           </div>
           <div class="flex gap-2">
             <button *ngFor="let b of [1, 2, 3]" type="button" (click)="newOrderForm.boxCount = b"
-              [ngClass]="newOrderForm.boxCount === b ? 'bg-slate-900 text-white font-medium' : 'bg-slate-100 text-slate-700 hover:bg-slate-200'"
-              class="flex-1 py-1.5 text-xs rounded transition-colors cursor-pointer">
+              [ngClass]="newOrderForm.boxCount === b ? 'bg-orange-600 text-white font-bold' : 'bg-slate-100 text-slate-700 hover:bg-slate-200'"
+              class="flex-1 py-1.5 text-xs rounded-lg transition-colors cursor-pointer">
               {{ b }} กล่อง
             </button>
           </div>
         </div>
 
         <div>
-          <label class="block text-xs font-medium text-slate-700 mb-1">หมายเหตุเพิ่มเติม</label>
+          <label class="block text-xs font-semibold text-slate-700 mb-1">หมายเหตุเพิ่มเติม</label>
           <input type="text" [(ngModel)]="newOrderForm.note" placeholder="เช่น ฝากไว้ป้อมยาม, โทรหาก่อนส่ง"
-            class="w-full px-3 py-1.5 text-xs border border-slate-300 rounded focus:outline-none focus:border-slate-600" />
+            class="w-full px-3 py-1.5 text-xs border border-slate-300 rounded-lg focus:outline-none focus:border-orange-500" />
         </div>
 
         <button (click)="submitNewOrder()" [disabled]="isLoading()"
-          class="w-full py-2 bg-orange-600 hover:bg-orange-700 text-white text-xs font-medium rounded transition-colors cursor-pointer">
+          class="w-full py-2.5 bg-orange-600 hover:bg-orange-700 text-white text-xs font-bold rounded-lg transition-colors cursor-pointer shadow-xs">
           บันทึกออเดอร์
         </button>
       </div>
 
-      <!-- รายการออเดอร์ (ตาราง) -->
-      <div class="lg:col-span-2 space-y-3">
 
-        <!-- ตัวกรองและค้นหา -->
-        <div class="bg-white p-3 rounded-lg border border-slate-200 flex flex-wrap items-center justify-between gap-2">
-          <div class="flex-1 min-w-[220px] flex gap-1">
+      <!-- ตารางรายการออเดอร์ -->
+      <div class="lg:col-span-2 space-y-4">
+
+        <!-- แถบค้นหาและตัวกรอง -->
+        <div class="bg-white p-3 rounded-xl border border-slate-200 shadow-xs flex flex-wrap items-center justify-between gap-2">
+          <div class="flex-1 min-w-[200px] flex gap-1">
             <input type="text" [(ngModel)]="customerSearchQuery" (keyup.enter)="onSearchOrders()"
               placeholder="ค้นหาชื่อ, เบอร์โทร, หรือสถานที่..."
-              class="w-full px-3 py-1.5 text-xs border border-slate-300 rounded focus:outline-none focus:border-slate-600" />
+              class="w-full px-3 py-1.5 text-xs border border-slate-300 rounded-lg focus:outline-none focus:border-orange-500" />
             <button (click)="onSearchOrders()"
-              class="px-3 py-1.5 bg-slate-800 text-white text-xs rounded hover:bg-slate-900 cursor-pointer">
+              class="px-3 py-1.5 bg-slate-900 text-white text-xs rounded-lg hover:bg-slate-800 cursor-pointer font-medium">
               ค้นหา
             </button>
           </div>
 
           <div class="flex items-center gap-1 text-xs">
             <button (click)="setFilterStatus('all')"
-              [ngClass]="statusFilter() === 'all' ? 'bg-slate-900 text-white' : 'bg-slate-100 text-slate-700 hover:bg-slate-200'"
-              class="px-2.5 py-1.5 rounded transition-colors cursor-pointer">
+              [ngClass]="statusFilter() === 'all' ? 'bg-slate-900 text-white font-medium' : 'bg-slate-100 text-slate-700 hover:bg-slate-200'"
+              class="px-2.5 py-1.5 rounded-lg transition-colors cursor-pointer">
               ทั้งหมด ({{ orders().length }})
             </button>
             <button (click)="setFilterStatus('pending')"
-              [ngClass]="statusFilter() === 'pending' ? 'bg-amber-600 text-white' : 'bg-slate-100 text-slate-700 hover:bg-slate-200'"
-              class="px-2.5 py-1.5 rounded transition-colors cursor-pointer">
+              [ngClass]="statusFilter() === 'pending' ? 'bg-amber-600 text-white font-medium' : 'bg-slate-100 text-slate-700 hover:bg-slate-200'"
+              class="px-2.5 py-1.5 rounded-lg transition-colors cursor-pointer">
               รอส่ง ({{ pendingCount() }})
             </button>
             <button (click)="setFilterStatus('delivered')"
-              [ngClass]="statusFilter() === 'delivered' ? 'bg-emerald-600 text-white' : 'bg-slate-100 text-slate-700 hover:bg-slate-200'"
-              class="px-2.5 py-1.5 rounded transition-colors cursor-pointer">
+              [ngClass]="statusFilter() === 'delivered' ? 'bg-emerald-600 text-white font-medium' : 'bg-slate-100 text-slate-700 hover:bg-slate-200'"
+              class="px-2.5 py-1.5 rounded-lg transition-colors cursor-pointer">
               ส่งแล้ว ({{ deliveredCount() }})
+            </button>
+
+            <button (click)="clearOrders()" [disabled]="isLoading()"
+              class="ml-2 px-2.5 py-1.5 bg-rose-50 text-rose-700 border border-rose-200 rounded-lg hover:bg-rose-100 text-xs cursor-pointer font-medium">
+              ล้างทั้งหมด
             </button>
           </div>
         </div>
 
-        <!-- ตารางข้อมูล -->
-        <div class="bg-white rounded-lg border border-slate-200 overflow-hidden">
-          <div class="overflow-x-auto max-h-[560px]">
+        <!-- รายการตาราง -->
+        <div class="bg-white rounded-xl border border-slate-200 shadow-xs overflow-hidden">
+          <div class="overflow-x-auto max-h-[520px]">
             <table class="w-full text-left border-collapse text-xs">
               <thead class="bg-slate-100 text-slate-700 sticky top-0 z-10 border-b border-slate-200">
                 <tr>
@@ -246,7 +354,7 @@
                 <tr *ngFor="let ord of filteredOrders" class="hover:bg-slate-50 transition-colors">
                   <td class="p-2.5 text-center text-slate-500 font-mono">{{ ord.id }}</td>
                   <td class="p-2.5">
-                    <p class="font-medium text-slate-900">
+                    <p class="font-semibold text-slate-900">
                       {{ ord.customer ? ord.customer.firstName + ' ' + ord.customer.lastName : 'ไม่ระบุชื่อ' }}
                     </p>
                     <p class="text-slate-500 text-[11px]">{{ ord.customer?.phone || '-' }}</p>
@@ -262,30 +370,26 @@
                   </td>
 
                   <td class="p-2.5 text-center">
-                    <div class="inline-flex items-center gap-1 bg-slate-100 px-1 py-0.5 rounded">
+                    <div class="inline-flex items-center gap-1 bg-slate-100 px-1.5 py-0.5 rounded-md">
                       <button (click)="changeBoxCount(ord, -1)"
-                        class="w-4 h-4 bg-white rounded text-slate-700 font-bold hover:bg-slate-200 cursor-pointer text-center leading-none">-</button>
-                      <span class="w-4 font-semibold text-slate-800 text-center">{{ ord.boxCount }}</span>
+                        class="w-4 h-4 bg-white rounded text-slate-700 font-bold hover:bg-slate-200 cursor-pointer text-center leading-none shadow-xs">-</button>
+                      <span class="w-4 font-bold text-slate-800 text-center">{{ ord.boxCount }}</span>
                       <button (click)="changeBoxCount(ord, 1)"
-                        class="w-4 h-4 bg-white rounded text-slate-700 font-bold hover:bg-slate-200 cursor-pointer text-center leading-none">+</button>
+                        class="w-4 h-4 bg-white rounded text-slate-700 font-bold hover:bg-slate-200 cursor-pointer text-center leading-none shadow-xs">+</button>
                     </div>
                   </td>
 
                   <td class="p-2.5 text-center">
                     <button (click)="toggleOrderStatus(ord)"
                       [ngClass]="ord.status === 'delivered' ? 'bg-emerald-50 text-emerald-700 border-emerald-300 hover:bg-emerald-100' : 'bg-amber-50 text-amber-700 border-amber-300 hover:bg-amber-100'"
-                      class="px-2 py-1 rounded text-[11px] font-medium border transition-colors cursor-pointer">
+                      class="px-2 py-1 rounded-md text-[11px] font-medium border transition-colors cursor-pointer">
                       {{ ord.status === 'delivered' ? 'ส่งแล้ว' : 'รอส่ง' }}
                     </button>
                   </td>
 
                   <td class="p-2.5 text-center">
                     <a [href]="getGoogleMapsUrl(ord)" target="_blank"
-                      class="inline-flex items-center gap-1 px-2.5 py-1 bg-blue-600 hover:bg-blue-700 text-white rounded text-[11px] font-medium transition-colors cursor-pointer">
-                      <svg class="w-3 h-3" viewBox="0 0 24 24" fill="currentColor">
-                        <path
-                          d="M12 2C8.13 2 5 5.13 5 9c0 5.25 7 13 7 13s7-7.75 7-13c0-3.87-3.13-7-7-7zm0 9.5c-1.38 0-2.5-1.12-2.5-2.5s1.12-2.5 2.5-2.5 2.5 1.12 2.5 2.5-1.12 2.5-2.5 2.5z" />
-                      </svg>
+                      class="inline-flex items-center gap-1 px-2.5 py-1 bg-blue-600 hover:bg-blue-700 text-white rounded-md text-[11px] font-medium transition-colors cursor-pointer shadow-xs">
                       <span>Google Maps</span>
                     </a>
                   </td>
@@ -314,9 +418,186 @@
 
   </main>
 
-  <!-- ท้ายหน้าเว็บ -->
+
+  <!-- ======================================================== -->
+  <!-- 2. แท็บหน้าจอสำหรับไรเดอร์ (RIDER MOBILE VIEW)           -->
+  <!-- ======================================================== -->
+  <main *ngIf="activeTab() === 'rider'" class="flex-1 max-w-md w-full mx-auto p-4 sm:p-6 space-y-4">
+
+    <!-- ถ้ายังไม่ได้กดจัดเส้นทาง ให้มีปุ่มแจ้งเตือน -->
+    <div *ngIf="!routingResult()" class="bg-white p-6 rounded-2xl border border-slate-200 shadow-md text-center space-y-4">
+      <div class="w-12 h-12 mx-auto rounded-full bg-orange-100 text-orange-600 flex items-center justify-center font-bold text-sm">Rider</div>
+      <h3 class="font-bold text-base text-slate-800">ยังไม่มีใบงานจัดเส้นทาง</h3>
+      <p class="text-xs text-slate-500">
+        เจ้าของร้านยังไม่ได้กดปุ่ม 'จัดเส้นทาง' กรุณากดปุ่มด้านล่างเพื่อประมวลผลแบ่งงานไรเดอร์รอบเที่ยงนี้
+      </p>
+      <button (click)="optimizeDeliveryRoutes()" [disabled]="isOptimizing()"
+        class="w-full py-2.5 bg-orange-600 hover:bg-orange-700 text-white text-xs font-bold rounded-xl transition-all cursor-pointer shadow-sm">
+        {{ isOptimizing() ? 'กำลังจัดเส้นทาง...' : 'กดจัดเส้นทางและสร้างใบงานไรเดอร์' }}
+      </button>
+    </div>
+
+    <!-- เมื่อมีใบงานพร้อมแสดง -->
+    <div *ngIf="routingResult() as result" class="space-y-4">
+
+      <!-- แถบเลือกว่าฉันคือไรเดอร์คนไหน -->
+      <div class="bg-white p-3.5 rounded-2xl border border-slate-200 shadow-xs space-y-2">
+        <label class="block text-xs font-bold text-slate-700">เลือกไรเดอร์ผู้ปฏิบัติงาน:</label>
+        <div class="flex gap-1.5 overflow-x-auto pb-1">
+          <button *ngFor="let r of result.riders; let i = index" (click)="selectActiveRider(i)"
+            [style.borderColor]="r.color"
+            [ngClass]="activeRiderIndex() === i ? 'text-white font-bold shadow-sm' : 'bg-slate-50 text-slate-700 border'"
+            [style.backgroundColor]="activeRiderIndex() === i ? r.color : ''"
+            class="px-3 py-1.5 rounded-xl text-xs whitespace-nowrap transition-all cursor-pointer">
+            {{ r.riderName.split(' ')[0] }}
+          </button>
+        </div>
+      </div>
+
+      <!-- รายละเอียดใบงานของไรเดอร์คนปัจจุบัน -->
+      <div *ngIf="currentRider as rider" class="space-y-4">
+
+        <!-- การ์ดสรุปจำนวนกล่องที่ต้องหยิบ (เงื่อนไขไม่เกิน 10 กล่อง) -->
+        <div class="bg-linear-to-br from-slate-900 to-slate-800 text-white p-5 rounded-2xl shadow-md space-y-3">
+          <div class="flex items-center justify-between">
+            <div>
+              <span class="text-xs px-2 py-0.5 rounded font-bold" [style.backgroundColor]="rider.color">
+                {{ rider.riderName }}
+              </span>
+              <h2 class="text-base font-bold mt-1">ใบงานจัดส่งด่วนมื้อเที่ยง</h2>
+            </div>
+            <div class="text-right">
+              <span class="text-xs text-slate-400">กำหนดส่งเสร็จ</span>
+              <p class="text-sm font-bold text-emerald-400">ก่อน 12:30 น.</p>
+            </div>
+          </div>
+
+          <!-- กล่องสรุปจำนวนกล่องข้าว (ตามโจทย์: บอกชัดเจนว่าต้องหยิบไปกี่กล่อง) -->
+          <div class="bg-white/10 p-3.5 rounded-xl border border-white/10 flex items-center justify-between">
+            <div>
+              <p class="text-xs text-slate-300">หยิบข้าวกล่องจากร้านทั้งหมด:</p>
+              <p class="text-2xl font-black text-amber-400 mt-0.5">
+                {{ rider.totalBoxes }} <span class="text-xs font-normal text-slate-300">กล่อง</span>
+              </p>
+            </div>
+            <div class="text-right">
+              <span class="text-[11px] px-2 py-1 rounded-md bg-emerald-500/20 text-emerald-300 border border-emerald-400/30 font-semibold">
+                ความจุพอดี (<= 10 กล่อง)
+              </span>
+              <p class="text-[11px] text-slate-400 mt-1">ระยะทาง ~{{ rider.totalDistanceKm }} กม.</p>
+            </div>
+          </div>
+
+          <!-- ความคืบหน้าการส่ง -->
+          <div *ngIf="getRiderProgress(rider) as prog" class="space-y-1">
+            <div class="flex justify-between text-xs text-slate-300">
+              <span>ความคืบหน้าการส่ง:</span>
+              <span class="font-bold text-white">{{ prog.completed }} / {{ prog.total }} จุด ({{ prog.percent }}%)</span>
+            </div>
+            <div class="w-full bg-slate-700 h-2 rounded-full overflow-hidden">
+              <div class="bg-emerald-400 h-full rounded-full transition-all duration-300"
+                [style.width.%]="prog.percent"></div>
+            </div>
+          </div>
+        </div>
+
+
+        <!-- รายการลำดับจุดส่ง (Step-by-step Task Sheet) -->
+        <div class="bg-white p-4 rounded-2xl border border-slate-200 shadow-xs space-y-3">
+          <div class="border-b border-slate-100 pb-2">
+            <h3 class="font-bold text-sm text-slate-800">ลำดับการจัดส่งตามเส้นทาง</h3>
+            <p class="text-xs text-slate-500">เรียงลำดับจุดส่งที่ใกล้ที่สุด ไม่วิ่งอ้อม</p>
+          </div>
+
+          <div class="space-y-3 relative before:absolute before:inset-0 before:left-3.5 before:w-0.5 before:bg-slate-200 before:z-0">
+
+            <div *ngFor="let stop of rider.stops; let first = first; let last = last"
+              class="relative z-10 flex items-start gap-3">
+
+              <!-- เลขลำดับขั้นตอน -->
+              <div class="w-7 h-7 rounded-full flex items-center justify-center text-xs font-bold shrink-0 border-2 border-white shadow-xs"
+                [ngClass]="{
+                  'bg-amber-500 text-white': first || last,
+                  'bg-emerald-600 text-white': !first && !last && isStopCompleted(rider.riderId, stop.step),
+                  'bg-slate-800 text-white': !first && !last && !isStopCompleted(rider.riderId, stop.step)
+                }">
+                <span *ngIf="first" class="text-[10px]">เริ่ม</span>
+                <span *ngIf="last" class="text-[10px]">จบ</span>
+                <span *ngIf="!first && !last && isStopCompleted(rider.riderId, stop.step)" class="text-[10px]">เสร็จ</span>
+                <span *ngIf="!first && !last && !isStopCompleted(rider.riderId, stop.step)">{{ stop.step - 1 }}</span>
+              </div>
+
+              <!-- รายละเอียดแต่ละจุด -->
+              <div class="flex-1 bg-slate-50 p-3 rounded-xl border border-slate-200 text-xs space-y-1.5"
+                [ngClass]="isStopCompleted(rider.riderId, stop.step) ? 'opacity-60 bg-emerald-50/40 border-emerald-200' : ''">
+
+                <div class="flex items-start justify-between gap-2">
+                  <div>
+                    <span *ngIf="first" class="text-[10px] font-bold text-amber-700 uppercase tracking-wider block">จุดเริ่มต้น</span>
+                    <span *ngIf="last" class="text-[10px] font-bold text-amber-700 uppercase tracking-wider block">จุดสิ้นสุด</span>
+                    <span *ngIf="!first && !last" class="text-[10px] font-bold text-orange-600 block">จุดส่งที่ {{ stop.step - 1 }}</span>
+                    <p class="font-bold text-slate-800 text-xs">{{ stop.name }}</p>
+                  </div>
+
+                  <span *ngIf="stop.boxCount > 0" class="px-2 py-0.5 rounded bg-orange-100 text-orange-800 font-bold shrink-0">
+                    {{ stop.boxCount }} กล่อง
+                  </span>
+                </div>
+
+                <p class="text-slate-600 text-[11px]">ที่อยู่: {{ stop.address }}</p>
+
+                <p *ngIf="stop.phone" class="text-slate-600 font-mono">
+                  โทร: {{ stop.phone }}
+                </p>
+
+                <p *ngIf="stop.note" class="text-slate-400 text-[11px] italic">
+                  หมายเหตุ: {{ stop.note }}
+                </p>
+
+                <!-- ปุ่มแอ็กชัน: โทรออก, นำทาง, และติ๊กส่งสำเร็จ -->
+                <div *ngIf="!first && !last" class="pt-2 flex flex-wrap items-center gap-1.5 border-t border-slate-200/60">
+                  <a *ngIf="stop.phone" [href]="'tel:' + stop.phone"
+                    class="px-2.5 py-1 bg-emerald-600 text-white rounded-lg font-medium text-[11px] hover:bg-emerald-700 cursor-pointer">
+                    โทรหาลูกค้า
+                  </a>
+
+                  <a [href]="getStopNavigationUrl(stop)" target="_blank"
+                    class="px-2.5 py-1 bg-blue-600 text-white rounded-lg font-medium text-[11px] hover:bg-blue-700 cursor-pointer">
+                    แผนที่นำทาง
+                  </a>
+
+                  <button type="button" (click)="toggleStopCompleted(rider.riderId, stop.step)"
+                    [ngClass]="isStopCompleted(rider.riderId, stop.step) ? 'bg-slate-200 text-slate-700' : 'bg-orange-600 text-white'"
+                    class="px-2.5 py-1 rounded-lg font-medium text-[11px] ml-auto cursor-pointer transition-colors">
+                    {{ isStopCompleted(rider.riderId, stop.step) ? 'ยกเลิก' : 'ส่งเสร็จแล้ว' }}
+                  </button>
+                </div>
+
+                <div *ngIf="first || last" class="pt-1">
+                  <a [href]="getStopNavigationUrl(stop)" target="_blank"
+                    class="inline-block px-2.5 py-1 bg-slate-800 text-white rounded-lg font-medium text-[11px] hover:bg-slate-700 cursor-pointer">
+                    นำทางกลับร้าน
+                  </a>
+                </div>
+
+              </div>
+
+            </div>
+
+          </div>
+
+        </div>
+
+      </div>
+
+    </div>
+
+  </main>
+
+
+  <!-- ท้ายหน้าเว็บ (Footer) -->
   <footer class="bg-white border-t border-slate-200 mt-10 py-4 text-center text-xs text-slate-500">
-    <p>ระบบจัดการออเดอร์ส่งข้าวกล่อง ร้านตลาดน้อย มหาวิทยาลัยมหาสารคาม (มมส. ขามเรียง)</p>
+    <p>ระบบจัดเส้นทางและแบ่งงานไรเดอร์อัจฉริยะ (ส่งด่วนมื้อเที่ยง) • ร้านศูนย์อาหารตลาดน้อย มหาวิทยาลัยมหาสารคาม</p>
   </footer>
 
 </div>

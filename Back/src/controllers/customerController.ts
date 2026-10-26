@@ -57,6 +57,26 @@ customerRouter.get('/landmarks', (req: Request, res: Response) => {
   }
 });
 
+// ค้นหาลูกค้าในระยะทางที่กำหนด (HW-5: ค้นหาในระยะ 1 กม.)
+customerRouter.get('/nearby', (req: Request, res: Response) => {
+  try {
+    const lat = parseFloat(req.query.lat as string) || 16.2465;
+    const lng = parseFloat(req.query.lng as string) || 103.2510;
+    const radius = parseFloat(req.query.radius as string) || 1.0;
+
+    const customers = db.findCustomersNearby(lat, lng, radius);
+    res.json({
+      success: true,
+      center: { lat, lng },
+      radiusKm: radius,
+      count: customers.length,
+      data: customers,
+    });
+  } catch (error) {
+    res.status(500).json({ success: false, message: 'Internal server error', error });
+  }
+});
+
 customerRouter.get('/:id', (req: Request, res: Response) => {
   try {
     const id = parseInt(req.params.id);
@@ -72,7 +92,7 @@ customerRouter.get('/:id', (req: Request, res: Response) => {
 
 customerRouter.post('/', (req: Request, res: Response) => {
   try {
-    const { firstName, lastName, phone, address } = req.body;
+    const { firstName, lastName, phone, address, lat, lng } = req.body;
 
     if (!firstName || !lastName || !phone || !address) {
       return res.status(400).json({
@@ -86,6 +106,8 @@ customerRouter.post('/', (req: Request, res: Response) => {
       lastName: lastName.trim(),
       phone: phone.trim(),
       address: address.trim(),
+      lat: lat ? parseFloat(lat) : undefined,
+      lng: lng ? parseFloat(lng) : undefined,
     });
 
     res.status(201).json({
