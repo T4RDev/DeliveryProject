@@ -5,25 +5,50 @@ export interface MsuLandmark {
   name: string;
   category: string;
   address: string;
+  lat: number;
+  lng: number;
 }
 
+// พิกัดจุดศูนย์กลางร้าน: ศูนย์อาหารตลาดน้อย มหาวิทยาลัยมหาสารคาม (มมส. ขามเรียง)
+export const DEPOT_LOCATION = {
+  name: 'ศูนย์อาหารตลาดน้อย มมส.',
+  category: 'ร้านอาหาร/จุดศูนย์กลาง',
+  address: 'ศูนย์อาหารตลาดน้อย มหาวิทยาลัยมหาสารคาม (มมส. ขามเรียง)',
+  lat: 16.2465,
+  lng: 103.2510,
+};
+
+// พิกัดแลนด์มาร์กสำคัญรอบ มมส. ขามเรียง (ระยะทางรัศมีประมาณ 0.3 - 1.8 กม. จากตลาดน้อย)
 export const MSU_LANDMARKS: MsuLandmark[] = [
-  { name: 'คณะเทคโนโลยีสารสนเทศ (IT MSU)', category: 'คณะ', address: 'คณะเทคโนโลยีสารสนเทศ (IT MSU) มหาวิทยาลัยมหาสารคาม ขามเรียง' },
-  { name: 'อาคารวิทยบริการ (หอสมุดกลาง มมส.)', category: 'อาคารกลาง', address: 'อาคารวิทยบริการ (หอสมุดกลาง มมส.) ขามเรียง' },
-  { name: 'อาคารบรมราชกุมารี (สนง.อธิการบดี)', category: 'อาคารกลาง', address: 'อาคารบรมราชกุมารี สำนักงานอธิการบดี มหาวิทยาลัยมหาสารคาม' },
-  { name: 'คณะการบัญชีและการจัดการ (MBS)', category: 'คณะ', address: 'คณะการบัญชีและการจัดการ (MBS) มหาวิทยาลัยมหาสารคาม ขามเรียง' },
-  { name: 'คณะวิศวกรรมศาสตร์ มมส.', category: 'คณะ', address: 'คณะวิศวกรรมศาสตร์ มหาวิทยาลัยมหาสารคาม ขามเรียง' },
-  { name: 'ตึกสิริวิทย์ คณะศึกษาศาสตร์', category: 'คณะ', address: 'ตึกสิริวิทย์ คณะศึกษาศาสตร์ มหาวิทยาลัยมหาสารคาม ขามเรียง' },
-  { name: 'ศูนย์อาหารกลาง (Complex มมส.)', category: 'ร้านอาหาร/ส่วนกลาง', address: 'ศูนย์อาหารกลาง (Complex มมส.) มหาวิทยาลัยมหาสารคาม ขามเรียง' },
-  { name: 'โรงพยาบาลสุทธาเวช มมส.', category: 'โรงพยาบาล', address: 'โรงพยาบาลสุทธาเวช คณะแพทยศาสตร์ มหาวิทยาลัยมหาสารคาม' },
-  { name: 'คณะมนุษยศาสตร์และสังคมศาสตร์', category: 'คณะ', address: 'คณะมนุษยศาสตร์และสังคมศาสตร์ มหาวิทยาลัยมหาสารคาม ขามเรียง' },
-  { name: 'คณะสาธารณสุขศาสตร์ มมส.', category: 'คณะ', address: 'คณะสาธารณสุขศาสตร์ มหาวิทยาลัยมหาสารคาม ขามเรียง' },
-  { name: 'หอพักสุขสบาย ซอยวุ่นวาย ขามเรียง', category: 'หอพัก', address: 'หอพักสุขสบาย ซอยวุ่นวาย ตำบลขามเรียง อำเภอกันทรวิชัย' },
-  { name: 'คอนโดเดอะพาร์ค มมส.', category: 'หอพัก/คอนโด', address: 'คอนโดเดอะพาร์ค มมส. ตำบลขามเรียง อำเภอกันทรวิชัย' },
-  { name: 'หอพักอินเตอร์ มมส. ขามเรียง', category: 'หอพัก', address: 'หอพักอินเตอร์ มมส. ตำบลขามเรียง อำเภอกันทรวิชัย' },
-  { name: 'หอพักชื่นชม มมส.', category: 'หอพัก', address: 'หอพักชื่นชม หลัง มมส. ขามเรียง อำเภอกันทรวิชัย' },
-  { name: 'ศูนย์อาหารตลาดน้อย มมส.', category: 'ร้านอาหาร/ส่วนกลาง', address: 'ศูนย์อาหารตลาดน้อย มหาวิทยาลัยมหาสารคาม (มมส. ขามเรียง)' },
+  { name: 'คณะเทคโนโลยีสารสนเทศ (IT MSU)', category: 'คณะ', address: 'คณะเทคโนโลยีสารสนเทศ (IT MSU) มหาวิทยาลัยมหาสารคาม ขามเรียง', lat: 16.2445, lng: 103.2500 },
+  { name: 'อาคารวิทยบริการ (หอสมุดกลาง มมส.)', category: 'อาคารกลาง', address: 'อาคารวิทยบริการ (หอสมุดกลาง มมส.) ขามเรียง', lat: 16.2475, lng: 103.2520 },
+  { name: 'อาคารบรมราชกุมารี (สนง.อธิการบดี)', category: 'อาคารกลาง', address: 'อาคารบรมราชกุมารี สำนักงานอธิการบดี มหาวิทยาลัยมหาสารคาม', lat: 16.2490, lng: 103.2515 },
+  { name: 'คณะการบัญชีและการจัดการ (MBS)', category: 'คณะ', address: 'คณะการบัญชีและการจัดการ (MBS) มหาวิทยาลัยมหาสารคาม ขามเรียง', lat: 16.2435, lng: 103.2530 },
+  { name: 'คณะวิศวกรรมศาสตร์ มมส.', category: 'คณะ', address: 'คณะวิศวกรรมศาสตร์ มหาวิทยาลัยมหาสารคาม ขามเรียง', lat: 16.2420, lng: 103.2510 },
+  { name: 'ตึกสิริวิทย์ คณะศึกษาศาสตร์', category: 'คณะ', address: 'ตึกสิริวิทย์ คณะศึกษาศาสตร์ มหาวิทยาลัยมหาสารคาม ขามเรียง', lat: 16.2450, lng: 103.2540 },
+  { name: 'ศูนย์อาหารกลาง (Complex มมส.)', category: 'ร้านอาหาร/ส่วนกลาง', address: 'ศูนย์อาหารกลาง (Complex มมส.) มหาวิทยาลัยมหาสารคาม ขามเรียง', lat: 16.2480, lng: 103.2545 },
+  { name: 'โรงพยาบาลสุทธาเวช มมส.', category: 'โรงพยาบาล', address: 'โรงพยาบาลสุทธาเวช คณะแพทยศาสตร์ มหาวิทยาลัยมหาสารคาม', lat: 16.2520, lng: 103.2535 },
+  { name: 'คณะมนุษยศาสตร์และสังคมศาสตร์', category: 'คณะ', address: 'คณะมนุษยศาสตร์และสังคมศาสตร์ มหาวิทยาลัยมหาสารคาม ขามเรียง', lat: 16.2460, lng: 103.2535 },
+  { name: 'คณะสาธารณสุขศาสตร์ มมส.', category: 'คณะ', address: 'คณะสาธารณสุขศาสตร์ มหาวิทยาลัยมหาสารคาม ขามเรียง', lat: 16.2425, lng: 103.2490 },
+  { name: 'หอพักสุขสบาย ซอยวุ่นวาย ขามเรียง', category: 'หอพัก', address: 'หอพักสุขสบาย ซอยวุ่นวาย ตำบลขามเรียง อำเภอกันทรวิชัย', lat: 16.2495, lng: 103.2460 },
+  { name: 'คอนโดเดอะพาร์ค มมส.', category: 'หอพัก/คอนโด', address: 'คอนโดเดอะพาร์ค มมส. ตำบลขามเรียง อำเภอกันทรวิชัย', lat: 16.2510, lng: 103.2480 },
+  { name: 'หอพักอินเตอร์ มมส. ขามเรียง', category: 'หอพัก', address: 'หอพักอินเตอร์ มมส. ตำบลขามเรียง อำเภอกันทรวิชัย', lat: 16.2470, lng: 103.2450 },
+  { name: 'หอพักชื่นชม มมส.', category: 'หอพัก', address: 'หอพักชื่นชม หลัง มมส. ขามเรียง อำเภอกันทรวิชัย', lat: 16.2440, lng: 103.2445 },
+  { name: 'ศูนย์อาหารตลาดน้อย มมส.', category: 'ร้านอาหาร/ส่วนกลาง', address: 'ศูนย์อาหารตลาดน้อย มหาวิทยาลัยมหาสารคาม (มมส. ขามเรียง)', lat: 16.2465, lng: 103.2510 },
 ];
+
+// คำนวณระยะทางระหว่างพิกัด 2 จุด (Haversine Formula คืนค่าเป็นกิโลเมตร)
+export function calculateDistanceKm(lat1: number, lon1: number, lat2: number, lon2: number): number {
+  const R = 6371; // รัศมีโลกเฉลี่ย (km)
+  const dLat = (lat2 - lat1) * (Math.PI / 180);
+  const dLon = (lon2 - lon1) * (Math.PI / 180);
+  const a =
+    Math.sin(dLat / 2) * Math.sin(dLat / 2) +
+    Math.cos(lat1 * (Math.PI / 180)) * Math.cos(lat2 * (Math.PI / 180)) *
+    Math.sin(dLon / 2) * Math.sin(dLon / 2);
+  const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+  return Math.round(R * c * 100) / 100;
+}
 
 export class Database {
   private customers: Customer[] = [];
@@ -38,6 +63,10 @@ export class Database {
 
   getMsuLandmarks(): MsuLandmark[] {
     return MSU_LANDMARKS;
+  }
+
+  getDepotLocation() {
+    return DEPOT_LOCATION;
   }
 
   private seedInitialCustomers() {
@@ -61,6 +90,8 @@ export class Database {
         lastName: c.lastName,
         phone: c.phone,
         address: c.landmark.address,
+        lat: c.landmark.lat,
+        lng: c.landmark.lng,
         createdAt: new Date().toISOString(),
       });
     }
@@ -91,20 +122,51 @@ export class Database {
     );
   }
 
+  // ค้นหาลูกค้าในระยะทางที่กำหนด (เช่น รัศมี 1 กิโลเมตร ตามโจทย์ HW-5)
+  findCustomersNearby(lat: number, lng: number, radiusKm = 1.0): Customer[] {
+    return this.customers.filter((c) => {
+      const cLat = c.lat ?? DEPOT_LOCATION.lat;
+      const cLng = c.lng ?? DEPOT_LOCATION.lng;
+      const dist = calculateDistanceKm(lat, lng, cLat, cLng);
+      return dist <= radiusKm;
+    });
+  }
+
   createCustomer(data: {
     firstName: string;
     lastName: string;
     phone: string;
     address: string;
+    lat?: number;
+    lng?: number;
   }): Customer {
     const cleanPhone = data.phone.replace(/[-\s]/g, '');
     const existing = this.customers.find(
       (c) => c.phone.replace(/[-\s]/g, '') === cleanPhone
     );
+
+    // หาพิกัดจากแลนด์มาร์กที่ตรงกับที่อยู่
+    let finalLat = data.lat;
+    let finalLng = data.lng;
+    if (!finalLat || !finalLng) {
+      const matched = MSU_LANDMARKS.find((lm) =>
+        data.address.includes(lm.name) || lm.address.includes(data.address)
+      );
+      if (matched) {
+        finalLat = matched.lat;
+        finalLng = matched.lng;
+      } else {
+        finalLat = DEPOT_LOCATION.lat + (Math.random() - 0.5) * 0.008;
+        finalLng = DEPOT_LOCATION.lng + (Math.random() - 0.5) * 0.008;
+      }
+    }
+
     if (existing) {
       existing.firstName = data.firstName;
       existing.lastName = data.lastName;
       existing.address = data.address;
+      existing.lat = finalLat;
+      existing.lng = finalLng;
       existing.updatedAt = new Date().toISOString();
       return existing;
     }
@@ -115,6 +177,8 @@ export class Database {
       lastName: data.lastName,
       phone: data.phone,
       address: data.address,
+      lat: finalLat,
+      lng: finalLng,
       createdAt: new Date().toISOString(),
     };
     this.customers.push(newCust);
@@ -157,6 +221,19 @@ export class Database {
       const matchNote = o.note && o.note.toLowerCase().includes(q);
       const matchId = String(o.id) === q;
       return matchCustomer || matchNote || matchId;
+    });
+  }
+
+  // ค้นหารายการสั่งซื้อในระยะที่กำหนด (เช่น รัศมี 2 กิโลเมตร ตามโจทย์ HW-5)
+  findOrdersNearby(lat: number, lng: number, radiusKm = 2.0): Order[] {
+    const all = this.getAllOrders();
+    return all.filter((o) => {
+      const c = o.customer;
+      if (!c) return false;
+      const cLat = c.lat ?? DEPOT_LOCATION.lat;
+      const cLng = c.lng ?? DEPOT_LOCATION.lng;
+      const dist = calculateDistanceKm(lat, lng, cLat, cLng);
+      return dist <= radiusKm;
     });
   }
 
@@ -241,11 +318,17 @@ export class Database {
       const phone = `08${Math.floor(10000000 + Math.random() * 90000000)}`;
       const landmark = MSU_LANDMARKS[i % MSU_LANDMARKS.length];
 
+      // สุ่มขยับพิกัดเล็กน้อยไม่ให้ทับจุดเดียวกันเป๊ะ
+      const jitterLat = (Math.random() - 0.5) * 0.001;
+      const jitterLng = (Math.random() - 0.5) * 0.001;
+
       const customer = this.createCustomer({
         firstName: fName,
         lastName: lName,
         phone,
         address: landmark.address,
+        lat: landmark.lat + jitterLat,
+        lng: landmark.lng + jitterLng,
       });
 
       const boxCount = Math.floor(Math.random() * 3) + 1;

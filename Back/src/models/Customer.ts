@@ -4,6 +4,8 @@ export interface Customer {
   lastName: string;
   phone: string;
   address: string;
+  lat?: number;
+  lng?: number;
   createdAt?: string;
   updatedAt?: string;
 }
