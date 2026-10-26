@@ -1,7 +1,7 @@
 import { Injectable, inject } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
 import { Observable } from 'rxjs';
-import { Customer, Order, MsuLandmark, RoutingOptimizationResult } from '../models/delivery.model';
+import { Customer, Order, Rider, MsuLandmark, RoutingOptimizationResult } from '../models/delivery.model';
 import { environment } from '../../environments/environment';
 
 @Injectable({
@@ -10,6 +10,22 @@ import { environment } from '../../environments/environment';
 export class ApiService {
   private http = inject(HttpClient);
   private baseUrl = environment.apiUrl;
+
+  getRiders(): Observable<{ success: boolean; count: number; data: Rider[] }> {
+    return this.http.get<{ success: boolean; count: number; data: Rider[] }>(`${this.baseUrl}/riders`);
+  }
+
+  getRiderOrders(riderId: number): Observable<{ success: boolean; rider: Rider; data: Order[]; totalOrders: number; totalBoxes: number; deliveredCount: number; pendingCount: number }> {
+    return this.http.get<any>(`${this.baseUrl}/riders/${riderId}/orders`);
+  }
+
+  deliverOrder(orderId: number): Observable<{ success: boolean; message: string }> {
+    return this.http.put<{ success: boolean; message: string }>(`${this.baseUrl}/riders/orders/${orderId}/deliver`, {});
+  }
+
+  assignRider(orderId: number, riderId: number | null): Observable<{ success: boolean; message: string }> {
+    return this.http.put<{ success: boolean; message: string }>(`${this.baseUrl}/riders/orders/${orderId}/assign`, { riderId });
+  }
 
   getCustomers(): Observable<{ success: boolean; count: number; data: Customer[] }> {
     return this.http.get<{ success: boolean; count: number; data: Customer[] }>(`${this.baseUrl}/customers`);
@@ -56,7 +72,7 @@ export class ApiService {
     );
   }
 
-  createOrder(order: { customerId: number; boxCount: number; note?: string }): Observable<{ success: boolean; message: string; data: Order }> {
+  createOrder(order: { customerId: number; riderId?: number | null; boxCount: number; note?: string }): Observable<{ success: boolean; message: string; data: Order }> {
     return this.http.post<{ success: boolean; message: string; data: Order }>(`${this.baseUrl}/orders`, order);
   }
 

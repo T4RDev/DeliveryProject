@@ -2,6 +2,7 @@ import express, { Application, Request, Response } from 'express';
 import cors from 'cors';
 import { customerRouter } from './controllers/customerController';
 import { orderRouter } from './controllers/orderController';
+import { riderRouter } from './controllers/riderController';
 import { routingRouter } from './controllers/routingController';
 
 export const app: Application = express();
@@ -25,36 +26,16 @@ app.get('/api', (req: Request, res: Response) => {
       maxBoxesPerRider: 10,
     },
     endpoints: {
-      customers: {
-        list: 'GET /api/customers',
-        landmarks: 'GET /api/customers/landmarks',
-        search: 'GET /api/customers/search?q=:keyword',
-        phoneLookup: 'GET /api/customers/phone/:phone',
-        nearby: 'GET /api/customers/nearby?lat=:lat&lng=:lng&radius=:radiusKm',
-        get: 'GET /api/customers/:id',
-        create: 'POST /api/customers',
-        update: 'PUT /api/customers/:id',
-        delete: 'DELETE /api/customers/:id',
-      },
-      orders: {
-        list: 'GET /api/orders',
-        nearby: 'GET /api/orders/nearby?lat=:lat&lng=:lng&radius=:radiusKm',
-        get: 'GET /api/orders/:id',
-        create: 'POST /api/orders',
-        update: 'PUT /api/orders/:id',
-        delete: 'DELETE /api/orders/:id',
-        sampleData: 'POST /api/orders/mock',
-        clear: 'DELETE /api/orders/clear',
-      },
-      routing: {
-        optimize: 'POST /api/routing/optimize',
-        getRoutes: 'GET /api/routing/optimize',
-      },
+      customers: '/api/customers',
+      orders: '/api/orders',
+      riders: '/api/riders',
+      routing: '/api/routing/optimize',
     },
   });
 });
 
 app.use('/api/customers', customerRouter);
 app.use('/api/orders', orderRouter);
+app.use('/api/riders', riderRouter);
 app.use('/api/routing', routingRouter);
 

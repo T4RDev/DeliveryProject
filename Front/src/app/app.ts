@@ -1,27 +1,10 @@
-import { Component, OnInit, AfterViewInit, inject, signal, computed } from '@angular/core';
+import { Component, OnInit, AfterViewInit, inject, signal } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
-import * as L from 'leaflet';
 import { ApiService } from './services/api.service';
-import { Customer, Order, MsuLandmark, RoutingOptimizationResult, RiderRoute, DeliveryStop } from './models/delivery.model';
-
-const DEFAULT_MSU_LANDMARKS: MsuLandmark[] = [
-  { name: 'คณะเทคโนโลยีสารสนเทศ (IT MSU)', category: 'คณะ', address: 'คณะเทคโนโลยีสารสนเทศ (IT MSU) มหาวิทยาลัยมหาสารคาม ขามเรียง', lat: 16.2445, lng: 103.2500 },
-  { name: 'อาคารวิทยบริการ (หอสมุดกลาง มมส.)', category: 'อาคารกลาง', address: 'อาคารวิทยบริการ (หอสมุดกลาง มมส.) ขามเรียง', lat: 16.2475, lng: 103.2520 },
-  { name: 'อาคารบรมราชกุมารี (สำนักงานอธิการบดี)', category: 'อาคารกลาง', address: 'อาคารบรมราชกุมารี สำนักงานอธิการบดี มหาวิทยาลัยมหาสารคาม', lat: 16.2490, lng: 103.2515 },
-  { name: 'คณะการบัญชีและการจัดการ (MBS)', category: 'คณะ', address: 'คณะการบัญชีและการจัดการ (MBS) มหาวิทยาลัยมหาสารคาม ขามเรียง', lat: 16.2435, lng: 103.2530 },
-  { name: 'คณะวิศวกรรมศาสตร์ มมส.', category: 'คณะ', address: 'คณะวิศวกรรมศาสตร์ มหาวิทยาลัยมหาสารคาม ขามเรียง', lat: 16.2420, lng: 103.2510 },
-  { name: 'ตึกสิริวิทย์ คณะศึกษาศาสตร์', category: 'คณะ', address: 'ตึกสิริวิทย์ คณะศึกษาศาสตร์ มหาวิทยาลัยมหาสารคาม ขามเรียง', lat: 16.2450, lng: 103.2540 },
-  { name: 'ศูนย์อาหารกลาง (Complex มมส.)', category: 'ร้านอาหาร/ส่วนกลาง', address: 'ศูนย์อาหารกลาง (Complex มมส.) มหาวิทยาลัยมหาสารคาม ขามเรียง', lat: 16.2480, lng: 103.2545 },
-  { name: 'โรงพยาบาลสุทธาเวช มมส.', category: 'โรงพยาบาล', address: 'โรงพยาบาลสุทธาเวช คณะแพทยศาสตร์ มหาวิทยาลัยมหาสารคาม', lat: 16.2520, lng: 103.2535 },
-  { name: 'คณะมนุษยศาสตร์และสังคมศาสตร์', category: 'คณะ', address: 'คณะมนุษยศาสตร์และสังคมศาสตร์ มหาวิทยาลัยมหาสารคาม', lat: 16.2460, lng: 103.2535 },
-  { name: 'คณะสาธารณสุขศาสตร์ มมส.', category: 'คณะ', address: 'คณะสาธารณสุขศาสตร์ มหาวิทยาลัยมหาสารคาม ขามเรียง', lat: 16.2425, lng: 103.2490 },
-  { name: 'หอพักสุขสบาย ซอยวุ่นวาย ขามเรียง', category: 'หอพัก', address: 'หอพักสุขสบาย ซอยวุ่นวาย ตำบลขามเรียง อำเภอกันทรวิชัย', lat: 16.2495, lng: 103.2460 },
-  { name: 'คอนโดเดอะพาร์ค มมส.', category: 'หอพัก/คอนโด', address: 'คอนโดเดอะพาร์ค มมส. ตำบลขามเรียง อำเภอกันทรวิชัย', lat: 16.2510, lng: 103.2480 },
-  { name: 'หอพักอินเตอร์ มมส. ขามเรียง', category: 'หอพัก', address: 'หอพักอินเตอร์ มมส. ตำบลขามเรียง อำเภอกันทรวิชัย', lat: 16.2470, lng: 103.2450 },
-  { name: 'หอพักชื่นชม มมส.', category: 'หอพัก', address: 'หอพักชื่นชม หลัง มมส. ขามเรียง อำเภอกันทรวิชัย', lat: 16.2440, lng: 103.2445 },
-  { name: 'ศูนย์อาหารตลาดน้อย มมส.', category: 'ร้านอาหาร/ส่วนกลาง', address: 'ศูนย์อาหารตลาดน้อย มหาวิทยาลัยมหาสารคาม (มมส. ขามเรียง)', lat: 16.2465, lng: 103.2510 },
-];
+import { MapService } from './services/map.service';
+import { Customer, Order, Rider, MsuLandmark, RoutingOptimizationResult, RiderRoute, DeliveryStop } from './models/delivery.model';
+import { DEFAULT_MSU_LANDMARKS, DEFAULT_DEPOT, buildGoogleMapsSearchUrl, buildStopNavigationUrl } from './utils/constants';
 
 @Component({
   selector: 'app-root',
@@ -32,6 +15,7 @@ const DEFAULT_MSU_LANDMARKS: MsuLandmark[] = [
 })
 export class App implements OnInit, AfterViewInit {
   private api = inject(ApiService);
+  private mapService = inject(MapService);
 
   // แท็บหน้าจอ: 'owner' = หน้าจอเจ้าของร้าน, 'rider' = หน้าจอไรเดอร์บนมือถือ
   activeTab = signal<'owner' | 'rider'>('owner');
@@ -46,6 +30,9 @@ export class App implements OnInit, AfterViewInit {
   totalBoxes = signal<number>(0);
   pendingCount = signal<number>(0);
   deliveredCount = signal<number>(0);
+
+  // ข้อมูลไรเดอร์จากฐานข้อมูล MySQL
+  riders = signal<Rider[]>([]);
 
   // ข้อมูลแลนด์มาร์ก มมส.
   msuLandmarks = signal<MsuLandmark[]>(DEFAULT_MSU_LANDMARKS);
@@ -67,11 +54,8 @@ export class App implements OnInit, AfterViewInit {
     lng: 103.2500,
     boxCount: 1,
     note: '',
+    riderId: null as number | null,
   };
-
-  // แผนที่ Leaflet
-  private map: L.Map | null = null;
-  private routeLayerGroup: L.LayerGroup | null = null;
 
   // ผลการจัดเส้นทาง (Optimization Result)
   routingResult = signal<RoutingOptimizationResult | null>(null);
@@ -83,17 +67,22 @@ export class App implements OnInit, AfterViewInit {
 
   // ไรเดอร์ที่เลือกในหน้าจอมือถือ (Rider View)
   activeRiderIndex = signal<number>(0);
+  loggedInRider = signal<Rider | null>(null);
+  selectedLoginRiderId: number | null = 1;
 
   ngOnInit() {
     this.checkBackendAndLoadData();
+    this.loadRiders();
     this.loadMsuLandmarks();
     this.restoreCompletedStops();
   }
 
   ngAfterViewInit() {
-    // เตรียมแผนที่หลังจาก DOM พร้อม
     setTimeout(() => {
-      this.initMap();
+      this.mapService.initMap('deliveryMap', DEFAULT_DEPOT.lat, DEFAULT_DEPOT.lng);
+      if (this.routingResult()) {
+        this.mapService.renderRoutesOnMap(this.routingResult()!);
+      }
     }, 200);
   }
 
@@ -102,12 +91,11 @@ export class App implements OnInit, AfterViewInit {
     this.activeTab.set(tab);
     if (tab === 'owner') {
       setTimeout(() => {
-        if (!this.map) {
-          this.initMap();
-        } else {
-          this.map.invalidateSize();
+        this.mapService.invalidateSize();
+        if (this.routingResult()) {
+          this.mapService.renderRoutesOnMap(this.routingResult()!);
         }
-      }, 150);
+      }, 100);
     }
   }
 
@@ -127,6 +115,15 @@ export class App implements OnInit, AfterViewInit {
         this.backendConnected.set(true);
         this.updateOrderList(res.data, res.totalBoxes);
         this.isLoading.set(false);
+
+        // ดึงผลจัดเส้นทางล่วงหน้าเงียบๆ เพื่อให้ไรเดอร์เปิดดูใบงานได้ทันที
+        this.api.optimizeRoutes().subscribe({
+          next: (routeRes) => {
+            this.routingResult.set(routeRes);
+            this.mapService.renderRoutesOnMap(routeRes);
+          },
+          error: (err) => console.warn('Auto route load error:', err),
+        });
       },
       error: () => {
         this.backendConnected.set(false);
@@ -172,29 +169,39 @@ export class App implements OnInit, AfterViewInit {
     this.deliveredCount.set(orders.filter((o) => o.status === 'delivered').length);
   }
 
-  get filteredOrders(): Order[] {
-    const filter = this.statusFilter();
-    if (filter === 'pending') return this.orders().filter((o) => o.status !== 'delivered');
-    if (filter === 'delivered') return this.orders().filter((o) => o.status === 'delivered');
-    return this.orders();
-  }
-
   setFilterStatus(status: 'all' | 'pending' | 'delivered') {
     this.statusFilter.set(status);
+  }
+
+  get filteredOrders(): Order[] {
+    let list = this.orders();
+    const filter = this.statusFilter();
+    if (filter === 'pending') {
+      list = list.filter((o) => o.status !== 'delivered');
+    } else if (filter === 'delivered') {
+      list = list.filter((o) => o.status === 'delivered');
+    }
+
+    if (this.customerSearchQuery.trim()) {
+      const q = this.customerSearchQuery.trim().toLowerCase();
+      list = list.filter((o) => {
+        const fullName = `${o.customer?.firstName} ${o.customer?.lastName}`.toLowerCase();
+        const phone = o.customer?.phone?.toLowerCase() || '';
+        const address = o.customer?.address?.toLowerCase() || '';
+        return fullName.includes(q) || phone.includes(q) || address.includes(q);
+      });
+    }
+
+    return list;
   }
 
   onSearchOrders() {
     this.loadOrders(this.customerSearchQuery);
   }
 
-  onSelectLandmark(name: string) {
-    this.selectedLandmarkName.set(name);
-    const landmark = this.msuLandmarks().find((lm) => lm.name === name);
-    if (landmark) {
-      this.newOrderForm.address = landmark.address;
-      this.newOrderForm.lat = landmark.lat ?? 16.2465;
-      this.newOrderForm.lng = landmark.lng ?? 103.2510;
-    }
+  clearSearch() {
+    this.customerSearchQuery = '';
+    this.loadOrders();
   }
 
   pickRandomMsuLocation() {
@@ -208,34 +215,42 @@ export class App implements OnInit, AfterViewInit {
   lookupCustomerByPhone() {
     const phone = this.searchPhoneQuery.trim();
     if (!phone) {
-      this.phoneLookupResult.set('กรุณาใส่เบอร์โทรศัพท์');
+      this.phoneLookupResult.set('กรุณาระบุเบอร์โทรศัพท์');
       return;
     }
 
     this.api.getCustomerByPhone(phone).subscribe({
       next: (res) => {
-        if (res.success && res.data) {
-          const c = res.data;
-          this.newOrderForm.firstName = c.firstName;
-          this.newOrderForm.lastName = c.lastName;
-          this.newOrderForm.phone = c.phone;
-          this.newOrderForm.address = c.address;
-          if (c.lat && c.lng) {
-            this.newOrderForm.lat = c.lat;
-            this.newOrderForm.lng = c.lng;
-          }
-          this.phoneLookupResult.set(`พบข้อมูลเดิม: ${c.firstName} ${c.lastName}`);
-          this.showAlert('success', `ดึงข้อมูลลูกค้าเดิมสำเร็จ`);
+        if (res.data) {
+          const cust = res.data;
+          this.newOrderForm.firstName = cust.firstName;
+          this.newOrderForm.lastName = cust.lastName;
+          this.newOrderForm.phone = cust.phone;
+          this.newOrderForm.address = cust.address;
+          this.newOrderForm.lat = cust.lat != null ? Number(cust.lat) : DEFAULT_DEPOT.lat;
+          this.newOrderForm.lng = cust.lng != null ? Number(cust.lng) : DEFAULT_DEPOT.lng;
+          this.phoneLookupResult.set(`พบลูกค้าเดิม: ${cust.firstName} ${cust.lastName}`);
+          this.showAlert('success', `ดึงข้อมูลลูกค้าเดิม: ${cust.firstName} เรียบร้อย`);
         } else {
-          this.phoneLookupResult.set('ไม่พบข้อมูลเดิม (พร้อมสร้างเป็นลูกค้าใหม่)');
+          this.phoneLookupResult.set('ไม่พบข้อมูลลูกค้าเดิม (สามารถกรอกเป็นลูกค้าใหม่ได้)');
           this.newOrderForm.phone = phone;
         }
       },
       error: () => {
-        this.phoneLookupResult.set('ไม่พบข้อมูลลูกค้าเดิม (พร้อมสร้างเป็นลูกค้าใหม่)');
+        this.phoneLookupResult.set('ไม่พบข้อมูลลูกค้าเดิม');
         this.newOrderForm.phone = phone;
       },
     });
+  }
+
+  onSelectLandmark(landmarkName: string) {
+    this.selectedLandmarkName.set(landmarkName);
+    const landmark = this.msuLandmarks().find((l) => l.name === landmarkName);
+    if (landmark) {
+      this.newOrderForm.address = landmark.address;
+      this.newOrderForm.lat = landmark.lat != null ? Number(landmark.lat) : DEFAULT_DEPOT.lat;
+      this.newOrderForm.lng = landmark.lng != null ? Number(landmark.lng) : DEFAULT_DEPOT.lng;
+    }
   }
 
   submitNewOrder() {
@@ -250,8 +265,8 @@ export class App implements OnInit, AfterViewInit {
       lastName: this.newOrderForm.lastName.trim(),
       phone: this.newOrderForm.phone.trim(),
       address: this.newOrderForm.address.trim(),
-      lat: this.newOrderForm.lat,
-      lng: this.newOrderForm.lng,
+      lat: Number(this.newOrderForm.lat),
+      lng: Number(this.newOrderForm.lng),
     };
 
     this.api.createCustomer(customerPayload).subscribe({
@@ -260,7 +275,8 @@ export class App implements OnInit, AfterViewInit {
         this.api
           .createOrder({
             customerId: customer.id,
-            boxCount: this.newOrderForm.boxCount,
+            riderId: this.newOrderForm.riderId,
+            boxCount: Number(this.newOrderForm.boxCount),
             note: this.newOrderForm.note?.trim() || undefined,
           })
           .subscribe({
@@ -278,8 +294,31 @@ export class App implements OnInit, AfterViewInit {
       },
       error: () => {
         this.isLoading.set(false);
-        this.showAlert('error', 'บันทึกข้อมูลลูกค้าไม่สำเร็จ');
+        this.showAlert('error', 'สร้างข้อมูลลูกค้าไม่สำเร็จ');
       },
+    });
+  }
+
+  loadRiders() {
+    this.api.getRiders().subscribe({
+      next: (res) => {
+        if (res.success && res.data) {
+          this.riders.set(res.data);
+        }
+      },
+      error: (err) => console.error('Failed to load riders', err),
+    });
+  }
+
+  assignRiderToOrder(order: Order, riderIdVal: any) {
+    const rId = riderIdVal ? parseInt(riderIdVal) : null;
+    this.api.assignRider(order.id, rId).subscribe({
+      next: () => {
+        order.riderId = rId;
+        order.rider = this.riders().find((r) => r.id === rId);
+        this.showAlert('success', `มอบหมายออเดอร์ #${order.id} ให้ไรเดอร์แล้ว`);
+      },
+      error: () => this.showAlert('error', 'มอบหมายไรเดอร์ไม่สำเร็จ'),
     });
   }
 
@@ -288,23 +327,22 @@ export class App implements OnInit, AfterViewInit {
     this.newOrderForm.lastName = '';
     this.newOrderForm.phone = '';
     this.newOrderForm.note = '';
+    this.newOrderForm.riderId = null;
     this.searchPhoneQuery = '';
     this.phoneLookupResult.set(null);
   }
 
   changeBoxCount(order: Order, delta: number) {
-    const newCount = order.boxCount + delta;
-    if (newCount < 1 || newCount > 3) return;
+    const nextVal = order.boxCount + delta;
+    if (nextVal < 1) return;
 
-    this.api.updateOrder(order.id, { boxCount: newCount }).subscribe({
+    this.api.updateOrder(order.id, { boxCount: nextVal }).subscribe({
       next: () => {
-        order.boxCount = newCount;
-        const total = this.orders().reduce((s, o) => s + o.boxCount, 0);
+        order.boxCount = nextVal;
+        const total = this.orders().reduce((sum, o) => sum + o.boxCount, 0);
         this.totalBoxes.set(total);
       },
-      error: () => {
-        this.showAlert('error', 'แก้ไขจำนวนกล่องไม่สำเร็จ');
-      },
+      error: () => this.showAlert('error', 'อัปเดตจำนวนกล่องไม่สำเร็จ'),
     });
   }
 
@@ -315,39 +353,26 @@ export class App implements OnInit, AfterViewInit {
         order.status = nextStatus;
         this.pendingCount.set(this.orders().filter((o) => o.status !== 'delivered').length);
         this.deliveredCount.set(this.orders().filter((o) => o.status === 'delivered').length);
+        this.showAlert(
+          'success',
+          nextStatus === 'delivered'
+            ? `ออเดอร์ #${order.id} อัปเดตเป็น: จัดส่งแล้ว`
+            : `ออเดอร์ #${order.id} เปลี่ยนกลับเป็น: รอจัดส่ง`
+        );
       },
-      error: () => {
-        this.showAlert('error', 'อัปเดตสถานะไม่สำเร็จ');
-      },
+      error: () => this.showAlert('error', 'เปลี่ยนสถานะไม่สำเร็จ'),
     });
   }
 
-  deleteOrder(id: number) {
-    if (!confirm(`ลบออเดอร์ #${id} หรือไม่?`)) return;
+  deleteOrder(orderId: number) {
+    if (!confirm(`คุณต้องการลบออเดอร์ #${orderId} ใช่หรือไม่?`)) return;
 
-    this.api.deleteOrder(id).subscribe({
+    this.api.deleteOrder(orderId).subscribe({
       next: () => {
-        this.showAlert('info', `ลบออเดอร์ #${id} แล้ว`);
+        this.showAlert('success', `ลบออเดอร์ #${orderId} เรียบร้อย`);
         this.loadOrders();
       },
-      error: () => {
-        this.showAlert('error', 'ลบออเดอร์ไม่สำเร็จ');
-      },
-    });
-  }
-
-  mockOrders(count = 24) {
-    this.isLoading.set(true);
-    this.api.mockOrders(count).subscribe({
-      next: (res) => {
-        this.isLoading.set(false);
-        this.showAlert('success', `สร้างข้อมูลตัวอย่าง ${res.count} รายการแล้ว`);
-        this.loadOrders();
-      },
-      error: () => {
-        this.isLoading.set(false);
-        this.showAlert('error', 'สร้างข้อมูลตัวอย่างไม่สำเร็จ');
-      },
+      error: () => this.showAlert('error', 'ลบออเดอร์ไม่สำเร็จ'),
     });
   }
 
@@ -370,62 +395,32 @@ export class App implements OnInit, AfterViewInit {
     });
   }
 
+  clearMapRoutes() {
+    this.mapService.clearMapRoutes(DEFAULT_DEPOT.lat, DEFAULT_DEPOT.lng);
+  }
+
+  mockOrders(count: number = 24) {
+    this.isLoading.set(true);
+    this.api.mockOrders(count).subscribe({
+      next: (res) => {
+        this.isLoading.set(false);
+        this.showAlert('success', `สุ่มจำลองออเดอร์ ${count} รายการ สำเร็จแล้ว!`);
+        this.updateOrderList(res.data, res.totalBoxes);
+        this.optimizeDeliveryRoutes();
+      },
+      error: () => {
+        this.isLoading.set(false);
+        this.showAlert('error', 'จำลองออเดอร์ไม่สำเร็จ');
+      },
+    });
+  }
+
   getGoogleMapsUrl(order: Order): string {
-    const query = order.customer?.address?.trim() || 'มหาวิทยาลัยมหาสารคาม ขามเรียง';
-    return `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(query)}`;
+    return buildGoogleMapsSearchUrl(order);
   }
 
   getStopNavigationUrl(stop: DeliveryStop): string {
-    return `https://www.google.com/maps/dir/?api=1&destination=${stop.lat},${stop.lng}`;
-  }
-
-  // ==========================================
-  // แผนที่ LEAFLET & จัดเส้นทาง (OPTIMIZATION)
-  // ==========================================
-
-  private initMap() {
-    const mapElement = document.getElementById('deliveryMap');
-    if (!mapElement || this.map) return;
-
-    // จุดศูนย์กลาง: ศูนย์อาหารตลาดน้อย มมส. ขามเรียง
-    this.map = L.map('deliveryMap').setView([16.2465, 103.2510], 15);
-
-    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-      maxZoom: 19,
-      attribution: '© OpenStreetMap contributors',
-    }).addTo(this.map);
-
-    this.routeLayerGroup = L.layerGroup().addTo(this.map);
-
-    // ปักหมุดร้านศูนย์อาหารตลาดน้อย มมส. เป็นค่าเริ่มต้น
-    this.renderDepotMarker();
-  }
-
-  private renderDepotMarker() {
-    if (!this.map) return;
-
-    const depotIcon = L.divIcon({
-      className: 'depot-marker',
-      html: `
-        <div style="background-color: #d97706; color: white; width: 36px; height: 36px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 11px; font-weight: bold; border: 3px solid white; box-shadow: 0 3px 8px rgba(0,0,0,0.4);">
-          ร้าน
-        </div>
-      `,
-      iconSize: [36, 36],
-      iconAnchor: [18, 18],
-      popupAnchor: [0, -18],
-    });
-
-    L.marker([16.2465, 103.2510], { icon: depotIcon })
-      .addTo(this.map)
-      .bindPopup(`
-        <div style="font-family: 'Prompt', sans-serif; font-size: 12px; line-height: 1.4;">
-          <strong style="color: #b45309; font-size: 13px;">ร้านส่งด่วนมื้อเที่ยง (จุดเริ่มต้น/จุดกลับ)</strong><br>
-          ศูนย์อาหารตลาดน้อย มหาวิทยาลัยมหาสารคาม ขามเรียง<br>
-          <span style="color: #64748b;">เริ่มปล่อยรถ: 11:30 น. | ส่งถึงก่อน: 12:30 น.</span>
-        </div>
-      `)
-      .openPopup();
+    return buildStopNavigationUrl(stop);
   }
 
   // เรียก API จัดเส้นทางและแบ่งงานไรเดอร์ (Project.md)
@@ -437,8 +432,8 @@ export class App implements OnInit, AfterViewInit {
         this.routingResult.set(res);
         this.selectedRiderId.set(null); // แสดงทุกคัน
 
-        // วาดเส้นทางบนแผนที่
-        this.renderRoutesOnMap(res);
+        // วาดเส้นทางบนแผนที่ผ่าน MapService
+        this.mapService.renderRoutesOnMap(res);
 
         this.showAlert(
           'success',
@@ -452,173 +447,82 @@ export class App implements OnInit, AfterViewInit {
     });
   }
 
-  // แคชเส้นทางตามถนนจริงเพื่อลดการยิง API ซ้ำ
-  private roadPathCache = new Map<string, [number, number][]>();
-
-  /**
-   * ดึงเส้นทางวิ่งตามแนวถนนจริงจาก OSRM (Open Source Routing Machine)
-   * โค้ดสไตล์นิสิต: ส่งพิกัดจุดแวะทั้งหมดไปคำนวณเส้นทางตามถนน OpenStreetMap
-   */
-  private async getRoadGeometry(stops: DeliveryStop[]): Promise<[number, number][]> {
-    if (stops.length < 2) return stops.map((s) => [s.lat, s.lng]);
-
-    // สร้างคีย์แคชจากพิกัดทั้งหมด
-    const cacheKey = stops.map((s) => `${s.lat},${s.lng}`).join('|');
-    if (this.roadPathCache.has(cacheKey)) {
-      return this.roadPathCache.get(cacheKey)!;
-    }
-
-    try {
-      // OSRM รับพิกัดแบบ lng,lat คั่นด้วย semicolon (;)
-      const coordsQuery = stops.map((s) => `${s.lng},${s.lat}`).join(';');
-      const url = `https://router.project-osrm.org/route/v1/driving/${coordsQuery}?overview=full&geometries=geojson`;
-
-      const response = await fetch(url);
-      if (!response.ok) throw new Error(`OSRM HTTP status: ${response.status}`);
-
-      const data = await response.json();
-      if (data.code === 'Ok' && data.routes && data.routes.length > 0) {
-        // GeoJSON geometry ให้พิกัดเป็น [lng, lat] จึงต้องสลับเป็น [lat, lng] สำหรับ Leaflet
-        const roadCoords: [number, number][] = data.routes[0].geometry.coordinates.map(
-          (c: [number, number]) => [c[1], c[0]]
-        );
-        this.roadPathCache.set(cacheKey, roadCoords);
-        return roadCoords;
-      }
-    } catch (error) {
-      console.warn('ดึงเส้นทางตามถนนไม่สำเร็จ ใช้เส้นตรงแทน:', error);
-    }
-
-    // กรณีออฟไลน์หรือไม่สามารถติดต่อ OSRM ได้ ให้ fallback ไปใช้เส้นตรง
-    const fallbackCoords: [number, number][] = stops.map((s) => [s.lat, s.lng]);
-    this.roadPathCache.set(cacheKey, fallbackCoords);
-    return fallbackCoords;
-  }
-
-  // วาดเส้นทางไรเดอร์บนแผนที่ให้โค้งเลี้ยวตามถนนจริง
-  async renderRoutesOnMap(result: RoutingOptimizationResult, highlightRiderId: number | null = null) {
-    if (!this.map || !this.routeLayerGroup) return;
-
-    this.routeLayerGroup.clearLayers();
-    this.renderDepotMarker();
-
-    const bounds: L.LatLngExpression[] = [[result.depot.lat, result.depot.lng]];
-
-    // กรองไรเดอร์ที่ต้องการแสดง
-    const ridersToRender = highlightRiderId
-      ? result.riders.filter((r) => r.riderId === highlightRiderId)
-      : result.riders;
-
-    // 1. ปักหมุดลูกค้าทั้งหมดก่อน
-    ridersToRender.forEach((rider) => {
-      rider.stops.forEach((stop) => {
-        bounds.push([stop.lat, stop.lng]);
-
-        // ปักหมุดลูกค้า (ข้าม depot เพราะปักไว้แล้ว)
-        if (stop.type === 'customer') {
-          const markerIcon = L.divIcon({
-            className: 'customer-marker',
-            html: `
-              <div style="background-color: ${rider.color}; color: white; width: 26px; height: 26px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-weight: bold; font-size: 11px; border: 2px solid white; box-shadow: 0 2px 5px rgba(0,0,0,0.3);">
-                ${stop.step - 1}
-              </div>
-            `,
-            iconSize: [26, 26],
-            iconAnchor: [13, 13],
-            popupAnchor: [0, -13],
-          });
-
-          const popupContent = `
-            <div style="font-family: 'Prompt', sans-serif; font-size: 12px; line-height: 1.4;">
-              <div style="display: flex; align-items: center; gap: 6px; margin-bottom: 4px;">
-                <span style="background-color: ${rider.color}; color: white; padding: 2px 6px; border-radius: 4px; font-size: 10px; font-weight: bold;">
-                  ${rider.riderName} (จุดที่ ${stop.step - 1})
-                </span>
-                <span style="font-weight: bold; color: #1e293b;">${stop.name}</span>
-              </div>
-              <p style="margin: 2px 0; color: #475569;">โทร: ${stop.phone || '-'}</p>
-              <p style="margin: 2px 0; color: #475569;">ที่อยู่: ${stop.address}</p>
-              <p style="margin: 2px 0; font-weight: bold; color: #ea580c;">จำนวน: ${stop.boxCount} กล่อง</p>
-              ${stop.note ? `<p style="margin: 2px 0; font-size: 11px; color: #94a3b8;">(${stop.note})</p>` : ''}
-              <div style="margin-top: 6px;">
-                <a href="${this.getStopNavigationUrl(stop)}" target="_blank" style="display: inline-block; background-color: #2563eb; color: white; padding: 3px 8px; border-radius: 4px; text-decoration: none; font-size: 11px;">
-                  เปิดแผนที่นำทาง
-                </a>
-              </div>
-            </div>
-          `;
-
-          const marker = L.marker([stop.lat, stop.lng], { icon: markerIcon }).bindPopup(popupContent);
-          this.routeLayerGroup?.addLayer(marker);
-        }
-      });
-    });
-
-    if (bounds.length > 1) {
-      this.map.fitBounds(L.latLngBounds(bounds), { padding: [40, 40] });
-    }
-
-    // 2. ดึงและวาดเส้นทางตามถนนจริงสำหรับไรเดอร์แต่ละคน
-    for (const rider of ridersToRender) {
-      const roadCoords = await this.getRoadGeometry(rider.stops);
-
-      // วาดเส้นขอบไฮไลต์ (Glow Casing) เมื่อคลิกเลือกไรเดอร์คนนั้น
-      if (highlightRiderId === rider.riderId) {
-        const glowPolyline = L.polyline(roadCoords, {
-          color: '#ffffff',
-          weight: 9,
-          opacity: 0.9,
-          lineCap: 'round',
-          lineJoin: 'round',
-        });
-        this.routeLayerGroup?.addLayer(glowPolyline);
-      }
-
-      // วาดเส้นทางวิ่งตามแนวถนนจริง (Road-following Polyline)
-      const polyline = L.polyline(roadCoords, {
-        color: rider.color,
-        weight: highlightRiderId === rider.riderId ? 6 : 4.5,
-        opacity: highlightRiderId ? (highlightRiderId === rider.riderId ? 1.0 : 0.25) : 0.85,
-        lineCap: 'round',
-        lineJoin: 'round',
-      });
-
-      polyline.bindTooltip(
-        `${rider.riderName}: ${rider.totalBoxes} กล่อง (วิ่งตามถนน ~${rider.totalDistanceKm} กม.)`,
-        { sticky: true }
-      );
-
-      this.routeLayerGroup?.addLayer(polyline);
-    }
-  }
-
   // กดเลือกดูเฉพาะเส้นทางของไรเดอร์คนใดคนหนึ่ง
   selectRiderFilter(riderId: number | null) {
     this.selectedRiderId.set(riderId);
-    const res = this.routingResult();
-    if (res) {
-      this.renderRoutesOnMap(res, riderId);
+    const result = this.routingResult();
+    if (result) {
+      this.mapService.renderRoutesOnMap(result, riderId);
     }
   }
 
-  clearMapRoutes() {
-    this.routeLayerGroup?.clearLayers();
-    this.renderDepotMarker();
+  loginRider(riderId: number | null) {
+    if (!riderId) {
+      this.showAlert('error', 'กรุณาเลือกชื่อไรเดอร์เพื่อเข้าสู่ระบบ');
+      return;
+    }
+    const rId = Number(riderId);
+    const rider = this.riders().find((r) => r.id === rId);
+    if (rider) {
+      this.loggedInRider.set(rider);
+
+      if (!this.routingResult()) {
+        this.optimizeDeliveryRoutes();
+      }
+
+      const ridersList = this.routingResult()?.riders || [];
+      const matchIdx = ridersList.findIndex((r) => r.riderId === rId);
+      if (matchIdx >= 0) {
+        this.activeRiderIndex.set(matchIdx);
+      } else {
+        this.activeRiderIndex.set(0);
+      }
+
+      this.showAlert('success', `เข้าสู่ระบบสำเร็จ: ${rider.name}`);
+    } else {
+      this.showAlert('error', 'ไม่พบข้อมูลไรเดอร์นี้ในระบบ');
+    }
   }
 
-  // ==========================================
-  // ฟังก์ชันสำหรับหน้าจอไรเดอร์ (RIDER VIEW)
-  // ==========================================
+  logoutRider() {
+    this.loggedInRider.set(null);
+    this.showAlert('info', 'ออกจากระบบเรียบร้อยแล้ว');
+  }
+
+  // สร้างข้อความสรุปเส้นทางตามโจทย์: 'จุดที่ 1 ต้องไปส่งบ้านคุณ A -> จุดที่ 2 ไปส่งบ้านคุณ B -> เสร็จแล้วให้ขับกลับร้าน'
+  getRiderRouteSummaryText(rider: RiderRoute): string {
+    const customerStops = rider.stops.filter((s) => s.type === 'customer');
+    if (customerStops.length === 0) return 'ไม่มีรายการจัดส่ง';
+    const textSeq = customerStops
+      .map((s, idx) => `จุดที่ ${idx + 1} ต้องไปส่งบ้านคุณ ${s.name}`)
+      .join(' -> ');
+    return `${textSeq} -> เสร็จแล้วให้ขับกลับร้าน`;
+  }
 
   get currentRider(): RiderRoute | null {
     const res = this.routingResult();
     if (!res || res.riders.length === 0) return null;
+
+    // ถ้าล็อกอินอยู่ ให้ดึงเฉพาะใบงานของไรเดอร์ที่ล็อกอิน
+    const loggedIn = this.loggedInRider();
+    if (loggedIn) {
+      const found = res.riders.find((r) => r.riderId === loggedIn.id);
+      return found ?? null;
+    }
+
     const idx = this.activeRiderIndex();
     return res.riders[idx] ?? res.riders[0];
   }
 
   selectActiveRider(idx: number) {
     this.activeRiderIndex.set(idx);
+    const res = this.routingResult();
+    if (res && res.riders[idx]) {
+      const matchRider = this.riders().find((r) => r.id === res.riders[idx].riderId);
+      if (matchRider) {
+        this.loggedInRider.set(matchRider);
+      }
+    }
   }
 
   getStopKey(riderId: number, step: number): string {
@@ -630,12 +534,27 @@ export class App implements OnInit, AfterViewInit {
     return !!this.completedStops()[key];
   }
 
-  toggleStopCompleted(riderId: number, step: number) {
+  toggleStopCompleted(riderId: number, step: number, orderId?: number) {
     const key = this.getStopKey(riderId, step);
     const current = { ...this.completedStops() };
-    current[key] = !current[key];
+    const nextVal = !current[key];
+    current[key] = nextVal;
     this.completedStops.set(current);
     this.saveCompletedStops();
+
+    if (orderId) {
+      const nextStatus = nextVal ? 'delivered' : 'pending';
+      this.api.updateOrder(orderId, { status: nextStatus }).subscribe({
+        next: () => {
+          this.loadOrders();
+          this.showAlert(
+            'success',
+            nextVal ? `ออเดอร์ #${orderId} อัปเดตสถานะ: ส่งสำเร็จแล้ว!` : `ยกเลิกสถานะออเดอร์ #${orderId}`
+          );
+        },
+        error: (err) => console.error('Failed to update order status in DB', err),
+      });
+    }
   }
 
   private saveCompletedStops() {
@@ -657,7 +576,6 @@ export class App implements OnInit, AfterViewInit {
     }
   }
 
-  // คำนวณความคืบหน้าการส่งของไรเดอร์คนปัจจุบัน
   getRiderProgress(rider: RiderRoute): { completed: number; total: number; percent: number } {
     const customerStops = rider.stops.filter((s) => s.type === 'customer');
     const total = customerStops.length;

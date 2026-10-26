@@ -18,15 +18,26 @@ export interface MsuLandmark {
   lng?: number;
 }
 
+export interface Rider {
+  id: number;
+  name: string;
+  phone: string;
+  vehiclePlate: string;
+  status: 'available' | 'delivering' | 'off_duty';
+  createdAt?: string;
+}
+
 export interface Order {
   id: number;
   customerId: number;
+  riderId?: number | null;
   boxCount: number;
   orderTime: string;
   deliveryDeadline: string;
   status: 'pending' | 'in_transit' | 'delivered' | 'cancelled';
   note?: string;
   customer?: Customer;
+  rider?: Rider;
   deliveredAt?: string;
 }
 

@@ -15,15 +15,27 @@ CREATE TABLE IF NOT EXISTS customers (
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
+-- สร้างตารางไรเดอร์ (riders)
+CREATE TABLE IF NOT EXISTS riders (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    name VARCHAR(100) NOT NULL,
+    phone VARCHAR(20) NOT NULL,
+    vehicle_plate VARCHAR(50) NOT NULL,
+    status ENUM('available', 'delivering', 'off_duty') NOT NULL DEFAULT 'available',
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
 -- สร้างตารางรายการสั่งซื้อ (orders)
 CREATE TABLE IF NOT EXISTS orders (
     id INT AUTO_INCREMENT PRIMARY KEY,
     customer_id INT NOT NULL,
+    rider_id INT NULL,
     box_count INT NOT NULL DEFAULT 1,
     status ENUM('pending', 'delivered') NOT NULL DEFAULT 'pending',
     note TEXT NULL,
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-    FOREIGN KEY (customer_id) REFERENCES customers(id) ON DELETE CASCADE
+    FOREIGN KEY (customer_id) REFERENCES customers(id) ON DELETE CASCADE,
+    FOREIGN KEY (rider_id) REFERENCES riders(id) ON DELETE SET NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 -- ============================================================
@@ -45,17 +57,25 @@ INSERT INTO customers (first_name, last_name, phone, address, lat, lng) VALUES
 ('มัลลิกา', 'ศรีสวัสดิ์', '0892223344', 'หอพักชื่นชม หลัง มมส. ขามเรียง ป้อมยาม', 16.2440000, 103.2445000)
 ON DUPLICATE KEY UPDATE phone=phone;
 
+-- ตัวอย่างข้อมูลไรเดอร์
+INSERT INTO riders (id, name, phone, vehicle_plate) VALUES
+(1, 'ไรเดอร์ 1 (สมชาย สายด่วน)', '0891110001', 'กข-1234 มหาสารคาม'),
+(2, 'ไรเดอร์ 2 (สมศักดิ์ ขามเรียง)', '0891110002', 'ขค-5678 มหาสารคาม'),
+(3, 'ไรเดอร์ 3 (ธนกร รถไว)', '0891110003', 'คง-9999 มหาสารคาม'),
+(4, 'ไรเดอร์ 4 (วิชัย มอไซค์ซิ่ง)', '0891110004', 'งจ-7777 มหาสารคาม')
+ON DUPLICATE KEY UPDATE name=VALUES(name);
+
 -- ตัวอย่างออเดอร์เริ่มต้นรอบเที่ยง
-INSERT INTO orders (customer_id, box_count, status, note) VALUES
-(1, 2, 'pending', 'โทรหาก่อนส่ง กำลังเรียนอยู่'),
-(2, 1, 'pending', 'ฝากไว้โต๊ะประชาสัมพันธ์ชั้น 1'),
-(3, 3, 'pending', 'สั่งข้าวเที่ยงฝ่ายทะเบียน'),
-(4, 2, 'pending', 'หน้าลิฟต์ตึก B'),
-(5, 1, 'pending', 'ใต้ตึกคณะวิศวะ'),
-(6, 2, 'pending', 'ห้องพักอาจารย์ชั้น 2'),
-(7, 3, 'pending', 'ร้านกาแฟ Complex'),
-(8, 1, 'pending', 'เคาน์เตอร์การเงิน'),
-(9, 2, 'pending', 'แขวนไว้หน้าห้อง 302'),
-(10, 1, 'pending', 'นิติบุคคลคอนโด'),
-(11, 2, 'pending', 'โทรเบอร์นี้เมื่อถึง'),
-(12, 1, 'pending', 'ป้อมยามหน้าหอ');
+INSERT INTO orders (customer_id, rider_id, box_count, status, note) VALUES
+(1, 1, 2, 'pending', 'โทรหาก่อนส่ง กำลังเรียนอยู่'),
+(2, 1, 1, 'pending', 'ฝากไว้โต๊ะประชาสัมพันธ์ชั้น 1'),
+(3, 1, 3, 'pending', 'สั่งข้าวเที่ยงฝ่ายทะเบียน'),
+(4, 2, 2, 'pending', 'หน้าลิฟต์ตึก B'),
+(5, 2, 1, 'pending', 'ใต้ตึกคณะวิศวะ'),
+(6, 2, 2, 'pending', 'ห้องพักอาจารย์ชั้น 2'),
+(7, 3, 3, 'pending', 'ร้านกาแฟ Complex'),
+(8, 3, 1, 'pending', 'เคาน์เตอร์การเงิน'),
+(9, 3, 2, 'pending', 'แขวนไว้หน้าห้อง 302'),
+(10, NULL, 1, 'pending', 'นิติบุคคลคอนโด'),
+(11, NULL, 2, 'pending', 'โทรเบอร์นี้เมื่อถึง'),
+(12, NULL, 1, 'pending', 'ป้อมยามหน้าหอ');

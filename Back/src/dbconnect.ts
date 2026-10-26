@@ -3,7 +3,7 @@ import dotenv from 'dotenv';
 
 dotenv.config();
 
-// สร้าง Connection Pool ตามแบบที่อาจารย์ M สอน (รองรับทั้ง localhost และ Aiven.io Cloud)
+
 export const conn = createPool({
   connectionLimit: 10,
   host: process.env.DB_HOST || 'localhost',
