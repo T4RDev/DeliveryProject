@@ -57,18 +57,32 @@ export interface DeliveryStop {
 
 export interface RiderRoute {
   riderId: number;
+  jobCode: string; // เช่น JOB-1
   riderName: string;
   color: string;
   totalBoxes: number;
   maxCapacity: number;
   orderCount: number;
+  maxOrders: number;
   totalDistanceKm: number;
   estimatedMinutes: number;
   departureTime: string;
   estimatedArrivalTime: string;
   isWithinOneHour: boolean;
-  lateFineCompensation: number;
+  riderCost: number; // ค่าจ้างไรเดอร์ = 15 + (กม. * 2 * กล่อง)
   stops: DeliveryStop[];
+}
+
+export interface FinancialSummary {
+  pricePerBox: number;
+  foodCostPerBox: number;
+  totalBoxes: number;
+  totalRevenue: number;
+  totalFoodCost: number;
+  totalRiderCost: number;
+  grossProfit: number;
+  netProfit: number;
+  isProfitable: boolean;
 }
 
 export interface RoutingOptimizationResult {
@@ -81,13 +95,19 @@ export interface RoutingOptimizationResult {
     lat: number;
     lng: number;
   };
+  strategy?: string;
+  availableStrategies?: {
+    id: string;
+    name: string;
+    description: string;
+  }[];
+  financial: FinancialSummary;
   summary: {
     totalRiders: number;
     totalOrders: number;
     totalBoxes: number;
     totalDistanceKm: number;
     maxEstimatedMinutes: number;
-    totalLateFine: number;
     allOnTime: boolean;
   };
   riders: RiderRoute[];

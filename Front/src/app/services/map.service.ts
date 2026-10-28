@@ -1,6 +1,6 @@
 import { Injectable, inject } from '@angular/core';
 import * as L from 'leaflet';
-import { RoutingOptimizationResult, DeliveryStop } from '../models/delivery.model';
+import { RoutingOptimizationResult, DeliveryStop, Customer } from '../models/delivery.model';
 import { OsrmService } from './osrm.service';
 import { buildStopNavigationUrl } from '../utils/constants';
 
@@ -112,13 +112,41 @@ export class MapService {
       ? result.riders.filter((r) => r.riderId === highlightRiderId)
       : result.riders;
 
-    // 1. ปักหมุดลูกค้าทั้งหมดก่อน
+    // 1. นับจำนวนจุดส่งที่พิกัดซ้ำกัน เพื่อขยับหมุดไม่ให้ทับซ้อนกัน (Spiderfy Offset)
+    const coordTotalCount: { [key: string]: number } = {};
+    const coordSeenCount: { [key: string]: number } = {};
+
+    ridersToRender.forEach((rider) => {
+      rider.stops.forEach((stop) => {
+        if (stop.type === 'customer') {
+          const key = `${stop.lat.toFixed(4)}_${stop.lng.toFixed(4)}`;
+          coordTotalCount[key] = (coordTotalCount[key] || 0) + 1;
+        }
+      });
+    });
+
+    // 2. ปักหมุดลูกค้าทั้งหมด
     ridersToRender.forEach((rider) => {
       rider.stops.forEach((stop) => {
         bounds.push([stop.lat, stop.lng]);
 
-        // ปักหมุดลูกค้า (ข้าม depot เพราะปักไว้แล้ว)
         if (stop.type === 'customer') {
+          const key = `${stop.lat.toFixed(4)}_${stop.lng.toFixed(4)}`;
+          const totalAtPoint = coordTotalCount[key] || 1;
+          const indexAtPoint = coordSeenCount[key] || 0;
+          coordSeenCount[key] = indexAtPoint + 1;
+
+          let markerLat = stop.lat;
+          let markerLng = stop.lng;
+
+          // ถ้ามีจุดส่งซ้ำพิกัดเดียวกัน ให้กระจายหมุดออกเป็นวงกลมเล็กๆ เพื่อให้มองเห็นครบทุกจุด (ไม่ทับกัน)
+          if (totalAtPoint > 1) {
+            const angle = (indexAtPoint * (2 * Math.PI)) / totalAtPoint;
+            const offsetRadius = 0.00022; // ~20-25 เมตร
+            markerLat = stop.lat + Math.sin(angle) * offsetRadius;
+            markerLng = stop.lng + Math.cos(angle) * offsetRadius * 1.1;
+          }
+
           const markerIcon = L.divIcon({
             className: 'customer-marker',
             html: `
@@ -151,7 +179,7 @@ export class MapService {
             </div>
           `;
 
-          const marker = L.marker([stop.lat, stop.lng], { icon: markerIcon }).bindPopup(popupContent);
+          const marker = L.marker([markerLat, markerLng], { icon: markerIcon }).bindPopup(popupContent);
           this.routeLayerGroup?.addLayer(marker);
         }
       });
@@ -201,6 +229,56 @@ export class MapService {
   clearMapRoutes(depotLat: number = 16.2465, depotLng: number = 103.2510) {
     this.routeLayerGroup?.clearLayers();
     this.renderDepotMarker(depotLat, depotLng);
+  }
+
+  /**
+   * ปักหมุดบ้านลูกค้าทุกคนบนแผนที่ สำหรับหน้าจัดการข้อมูลลูกค้า
+   */
+  renderCustomerLocations(customers: Customer[], selectedCustomerId?: number | null) {
+    if (!this.map || !this.routeLayerGroup) return;
+
+    this.routeLayerGroup.clearLayers();
+    this.renderDepotMarker();
+
+    const bounds: L.LatLngExpression[] = [[16.2465, 103.2510]];
+
+    customers.forEach((cust) => {
+      if (cust.lat == null || cust.lng == null) return;
+      bounds.push([cust.lat, cust.lng]);
+
+      const isSelected = selectedCustomerId != null && cust.id === selectedCustomerId;
+      const markerIcon = L.divIcon({
+        className: 'customer-home-marker',
+        html: `
+          <div style="background-color: ${isSelected ? '#ea580c' : '#0284c7'}; color: white; width: ${isSelected ? '32px' : '26px'}; height: ${isSelected ? '32px' : '26px'}; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-weight: bold; font-size: 11px; border: 2px solid white; box-shadow: 0 2px 6px rgba(0,0,0,0.35);">
+            ${cust.id}
+          </div>
+        `,
+        iconSize: isSelected ? [32, 32] : [26, 26],
+        iconAnchor: isSelected ? [16, 16] : [13, 13],
+        popupAnchor: isSelected ? [0, -16] : [0, -13],
+      });
+
+      const popupContent = `
+        <div style="font-family: 'Prompt', sans-serif; font-size: 12px; line-height: 1.4;">
+          <strong style="color: #0369a1; font-size: 13px;">${cust.firstName} ${cust.lastName} (รหัส ${cust.id})</strong><br>
+          <span style="color: #475569;">เบอร์โทร: ${cust.phone}</span><br>
+          <span style="color: #475569;">ที่อยู่: ${cust.address}</span><br>
+          <span style="color: #94a3b8; font-size: 11px;">พิกัด: ${cust.lat.toFixed(4)}, ${cust.lng.toFixed(4)}</span>
+        </div>
+      `;
+
+      const marker = L.marker([cust.lat, cust.lng], { icon: markerIcon }).bindPopup(popupContent);
+      this.routeLayerGroup?.addLayer(marker);
+
+      if (isSelected) {
+        marker.openPopup();
+      }
+    });
+
+    if (bounds.length > 1) {
+      this.map.fitBounds(L.latLngBounds(bounds), { padding: [40, 40] });
+    }
   }
 
   getMap(): L.Map | null {

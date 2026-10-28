@@ -92,8 +92,8 @@ export class ApiService {
     return this.http.delete<{ success: boolean; message: string }>(`${this.baseUrl}/orders/clear`);
   }
 
-  // จัดเส้นทางและแบ่งงานไรเดอร์อัจฉริยะ (Project.md)
-  optimizeRoutes(): Observable<RoutingOptimizationResult> {
-    return this.http.post<RoutingOptimizationResult>(`${this.baseUrl}/routing/optimize`, {});
+  // จัดเส้นทางและแบ่งงานไรเดอร์อัจฉริยะ (Project.pdf)
+  optimizeRoutes(strategy: string = 'fastest'): Observable<RoutingOptimizationResult> {
+    return this.http.post<RoutingOptimizationResult>(`${this.baseUrl}/routing/optimize`, { strategy });
   }
 }
