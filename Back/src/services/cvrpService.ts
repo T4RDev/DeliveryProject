@@ -10,7 +10,7 @@ import {
 export { FinancialSummary } from '../utils/calculator';
 
 export const MAX_ORDERS_PER_RIDER = 3; // เงื่อนไข: ไรเดอร์รับไม่เกิน 3 ออเดอร์
-export const MAX_BOXES_PER_RIDER = 10; // ความจุกระเป๋าไม่เกิน 10 กล่อง
+export const MAX_BOXES_PER_RIDER = 3; // ความจุกระเป๋าไม่เกิน 3 กล่อง
 
 export const RIDER_COLORS = [
   '#ef4444', '#10b981', '#3b82f6', '#f59e0b', '#8b5cf6',

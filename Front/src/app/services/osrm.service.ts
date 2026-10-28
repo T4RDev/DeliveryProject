@@ -3,7 +3,6 @@ import { DeliveryStop } from '../models/delivery.model';
 
 /**
  * Service ดึงพิกัด GPS และคำนวณเส้นทางตามแนวถนนจริง (OSRM - Open Source Routing Machine)
- * แยกไฟล์ออกมาเพื่อความสะดวกและชัดเจนเวลาพรีเซนต์โปรเจกต์
  */
 @Injectable({
   providedIn: 'root',
