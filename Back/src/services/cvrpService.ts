@@ -1,34 +1,27 @@
 import { Order } from '../models/Order';
 import { calculateDistanceKm, DEPOT_LOCATION } from '../utils/geo';
+import {
+  calculateRiderCost,
+  calculateEstimatedMinutes,
+  calculateFinancialSummary as calcFinance,
+  FinancialSummary,
+} from '../utils/calculator';
 
-// ========================================================
-// ค่าคงที่และเงื่อนไขตามโจทย์ CVRP (Project.md)
-// ========================================================
-export const MAX_BOXES_PER_RIDER = 10; // มอเตอร์ไซค์แต่ละคันขนข้าวกล่องได้เต็มที่คันละ 10 กล่อง
-export const AVERAGE_SPEED_KMH = 25; // ความเร็วเฉลี่ยรถมอเตอร์ไซค์ในเขต มมส. (กม./ชม.)
-export const SERVICE_TIME_PER_STOP_MIN = 2.5; // เวลาจอดส่งมอบอาหารเฉลี่ยจุดละ 2.5 นาที
+export { FinancialSummary } from '../utils/calculator';
 
-// สีประจำตัวไรเดอร์แต่ละคนตามที่โจทย์กำหนด (ไรเดอร์ 1 สีแดง, คนที่ 2 สีเขียว, คนที่ 3 สีน้ำเงิน ฯลฯ)
+export const MAX_ORDERS_PER_RIDER = 3; // เงื่อนไข: ไรเดอร์รับไม่เกิน 3 ออเดอร์
+export const MAX_BOXES_PER_RIDER = 10; // ความจุกระเป๋าไม่เกิน 10 กล่อง
+
 export const RIDER_COLORS = [
-  '#ef4444', // ไรเดอร์ 1 (แดง)
-  '#10b981', // ไรเดอร์ 2 (เขียว)
-  '#3b82f6', // ไรเดอร์ 3 (น้ำเงิน)
-  '#f59e0b', // ไรเดอร์ 4 (ส้มทอง)
-  '#8b5cf6', // ไรเดอร์ 5 (ม่วง)
-  '#06b6d4', // ไรเดอร์ 6 (ฟ้าไซแอน)
-  '#ec4899', // ไรเดอร์ 7 (ชมพู)
-  '#14b8a6', // ไรเดอร์ 8 (เขียวอมฟ้า)
+  '#ef4444', '#10b981', '#3b82f6', '#f59e0b', '#8b5cf6',
+  '#06b6d4', '#ec4899', '#14b8a6', '#6366f1', '#84cc16',
 ];
 
 export const RIDER_NAMES = [
-  'ไรเดอร์ 1 (สมชาย สายด่วน)',
-  'ไรเดอร์ 2 (สมศักดิ์ ขามเรียง)',
-  'ไรเดอร์ 3 (ธนกร รถไว)',
-  'ไรเดอร์ 4 (วิชัย มอไซค์ซิ่ง)',
-  'ไรเดอร์ 5 (อนุชา มมส.)',
-  'ไรเดอร์ 6 (กิตติ ส่งไว)',
-  'ไรเดอร์ 7 (ธีรพงษ์ ทันเที่ยง)',
-  'ไรเดอร์ 8 (เอกชัย ไวแสง)',
+  'ไรเดอร์ 1 (สมชาย สายด่วน)', 'ไรเดอร์ 2 (สมศักดิ์ ขามเรียง)', 'ไรเดอร์ 3 (ธนกร รถไว)',
+  'ไรเดอร์ 4 (วิชัย มอไซค์ซิ่ง)', 'ไรเดอร์ 5 (อนุชา มมส.)', 'ไรเดอร์ 6 (กิตติ ส่งไว)',
+  'ไรเดอร์ 7 (ธีรพงษ์ ทันเที่ยง)', 'ไรเดอร์ 8 (เอกชัย ไวแสง)', 'ไรเดอร์ 9 (สุรชัย ส่งเร็ว)',
+  'ไรเดอร์ 10 (วรวุฒิ นักซิ่ง)',
 ];
 
 export interface DeliveryStop {
@@ -47,40 +40,62 @@ export interface DeliveryStop {
 
 export interface RiderRoute {
   riderId: number;
+  jobCode: string;
   riderName: string;
   color: string;
-  totalBoxes: number; // ต้องไม่เกิน 10 กล่อง
+  totalBoxes: number;
   maxCapacity: number;
   orderCount: number;
+  maxOrders: number;
   totalDistanceKm: number;
   estimatedMinutes: number;
   departureTime: string;
   estimatedArrivalTime: string;
-  isWithinOneHour: boolean; // ส่งทันภายใน 1 ชั่วโมง (ก่อน 12:30 น.) หรือไม่
-  lateFineCompensation: number; // ค่าปรับชดเชยถ้าเลท (ออเดอร์ละ 20 บาท)
+  isWithinOneHour: boolean;
+  riderCost: number;
   stops: DeliveryStop[];
 }
 
-/**
- * อัลกอริทึมจัดเส้นทางและแบ่งงานไรเดอร์ (CVRP - Greedy Nearest Neighbor with Capacity <= 10)
- * โค้ดอ่านง่าย สไตล์นิสิต ตามโจทย์ Project.md
- * 1. ออกจากตลาดน้อย (Depot)
- * 2. เลือกจุดส่งที่ใกล้ที่สุดก่อนเสมอ (Nearest Neighbor) เพื่อไม่ให้วิ่งอ้อม
- * 3. คุมความจุในกระเป๋าไม่เกิน 10 กล่อง
- * 4. ครบแล้วขับรถกลับร้าน (Depot)
- */
-export function optimizeDeliveryRoutes(ordersToDeliver: Order[]): RiderRoute[] {
-  const unassigned = [...ordersToDeliver];
+export type RoutingStrategy = 'fastest' | 'cost_optimized' | 'balanced';
+
+export interface OptimizationOptions {
+  strategy?: RoutingStrategy;
+}
+
+// อัลกอริทึมจัดเส้นทางและแบ่งงานไรเดอร์ (CVRP - Capacitated Vehicle Routing Problem)
+export function optimizeDeliveryRoutes(
+  ordersToDeliver: Order[],
+  options: OptimizationOptions = {}
+): RiderRoute[] {
+  const strategy = options.strategy || 'fastest';
+  let unassigned = [...ordersToDeliver];
+
+  if (unassigned.length === 0) return [];
+
+  // ปรับการจัดเรียงออเดอร์เริ่มต้นตามกลยุทธ์ที่เลือก
+  if (strategy === 'cost_optimized') {
+    unassigned.sort((a, b) => b.boxCount - a.boxCount);
+  } else if (strategy === 'balanced') {
+    unassigned.sort((a, b) => {
+      const distA = calculateDistanceKm(DEPOT_LOCATION.lat, DEPOT_LOCATION.lng, a.customer?.lat ?? DEPOT_LOCATION.lat, a.customer?.lng ?? DEPOT_LOCATION.lng);
+      const distB = calculateDistanceKm(DEPOT_LOCATION.lat, DEPOT_LOCATION.lng, b.customer?.lat ?? DEPOT_LOCATION.lat, b.customer?.lng ?? DEPOT_LOCATION.lng);
+      return distA - distB;
+    });
+  }
+
   const routes: RiderRoute[] = [];
   let riderIndex = 0;
 
   while (unassigned.length > 0) {
     const color = RIDER_COLORS[riderIndex % RIDER_COLORS.length];
     const name = RIDER_NAMES[riderIndex % RIDER_NAMES.length];
+    const riderId = riderIndex + 1;
+    const jobCode = `JOB-${riderId}`;
 
     let currentLat = DEPOT_LOCATION.lat;
     let currentLng = DEPOT_LOCATION.lng;
     let currentBoxes = 0;
+    let currentOrderCount = 0;
     let totalDistanceKm = 0;
     const stops: DeliveryStop[] = [];
 
@@ -98,20 +113,15 @@ export function optimizeDeliveryRoutes(ordersToDeliver: Order[]): RiderRoute[] {
 
     let stepCounter = 2;
 
-    // หาออเดอร์ถัดไปที่ใกล้ที่สุดและใส่กระเป๋าได้ (รวมแล้วไม่เกิน 10 กล่อง)
-    while (true) {
+    // หาออเดอร์ถัดไป: จำกัดไม่เกิน 3 ออเดอร์ต่อคน และกล่องรวมไม่เกิน 10 กล่อง
+    while (currentOrderCount < MAX_ORDERS_PER_RIDER) {
       const candidates = unassigned.filter(
         (o) => currentBoxes + o.boxCount <= MAX_BOXES_PER_RIDER
       );
+      if (candidates.length === 0) break;
 
-      if (candidates.length === 0) {
-        // กระเป๋าเต็ม หรือไม่มีออเดอร์ที่พอดีกับความจุที่เหลือ
-        break;
-      }
-
-      // หาออเดอร์ที่พิกัดใกล้จุดปัจจุบันที่สุด (Nearest Neighbor)
-      let nearestIndexInUnassigned = -1;
-      let minDistance = Infinity;
+      let chosenIndex = -1;
+      let minScore = Infinity;
 
       for (let i = 0; i < unassigned.length; i++) {
         const order = unassigned[i];
@@ -121,25 +131,29 @@ export function optimizeDeliveryRoutes(ordersToDeliver: Order[]): RiderRoute[] {
         const custLng = order.customer?.lng ?? DEPOT_LOCATION.lng;
         const dist = calculateDistanceKm(currentLat, currentLng, custLat, custLng);
 
-        if (dist < minDistance) {
-          minDistance = dist;
-          nearestIndexInUnassigned = i;
+        let score = dist;
+        if (strategy === 'cost_optimized') {
+          score = dist * (order.boxCount || 1);
+        }
+
+        if (score < minScore) {
+          minScore = score;
+          chosenIndex = i;
         }
       }
 
-      if (nearestIndexInUnassigned === -1) {
-        break;
-      }
+      if (chosenIndex === -1) break;
 
-      // ดึงออเดอร์นี้ใส่กระเป๋าไรเดอร์คนปัจจุบัน
-      const [pickedOrder] = unassigned.splice(nearestIndexInUnassigned, 1);
+      const [pickedOrder] = unassigned.splice(chosenIndex, 1);
       const custLat = pickedOrder.customer?.lat ?? DEPOT_LOCATION.lat;
       const custLng = pickedOrder.customer?.lng ?? DEPOT_LOCATION.lng;
+      const stepDist = calculateDistanceKm(currentLat, currentLng, custLat, custLng);
 
       currentLat = custLat;
       currentLng = custLng;
       currentBoxes += pickedOrder.boxCount;
-      totalDistanceKm += minDistance;
+      currentOrderCount += 1;
+      totalDistanceKm += stepDist;
 
       stops.push({
         step: stepCounter++,
@@ -151,12 +165,12 @@ export function optimizeDeliveryRoutes(ordersToDeliver: Order[]): RiderRoute[] {
         lat: custLat,
         lng: custLng,
         boxCount: pickedOrder.boxCount,
-        distanceFromPrevKm: Math.round(minDistance * 100) / 100,
+        distanceFromPrevKm: Math.round(stepDist * 100) / 100,
         note: pickedOrder.note,
       });
     }
 
-    // จุดสุดท้าย: ขับรถกลับร้าน (ศูนย์อาหารตลาดน้อย มมส.)
+    // จุดสุดท้าย: ขับรถกลับร้าน
     const returnDist = calculateDistanceKm(currentLat, currentLng, DEPOT_LOCATION.lat, DEPOT_LOCATION.lng);
     totalDistanceKm += returnDist;
 
@@ -171,37 +185,34 @@ export function optimizeDeliveryRoutes(ordersToDeliver: Order[]): RiderRoute[] {
       distanceFromPrevKm: Math.round(returnDist * 100) / 100,
     });
 
-    // คำนวณเวลาวิ่ง: เวลาเดินทาง + เวลาส่งมอบอาหารแต่ละจุด
-    const travelMinutes = (totalDistanceKm / AVERAGE_SPEED_KMH) * 60;
-    const deliveryMinutes = (stops.length - 2) * SERVICE_TIME_PER_STOP_MIN;
-    const estimatedMinutes = Math.round(travelMinutes + deliveryMinutes);
+    const roundedDistanceKm = Math.round(totalDistanceKm * 100) / 100;
+    const estimatedMinutes = calculateEstimatedMinutes(roundedDistanceKm, currentOrderCount);
 
-    // เวลาออกรถ 11:30 น. (ตามโจทย์)
-    const departureHour = 11;
-    const departureMin = 30;
-    const arrivalTotalMin = departureHour * 60 + departureMin + estimatedMinutes;
+    // เวลาออกเดินทาง 11:30 น.
+    const departureTotalMin = 11 * 60 + 30;
+    const arrivalTotalMin = departureTotalMin + estimatedMinutes;
     const arrivalHour = Math.floor(arrivalTotalMin / 60);
     const arrivalMin = arrivalTotalMin % 60;
     const arrivalTimeString = `${String(arrivalHour).padStart(2, '0')}:${String(arrivalMin).padStart(2, '0')} น.`;
 
-    // เช็คว่าเกิน 60 นาที (เลทเกิน 12:30 น.) หรือไม่
     const isWithinOneHour = estimatedMinutes <= 60;
-    const lateOrdersCount = isWithinOneHour ? 0 : stops.length - 2;
-    const lateFineCompensation = lateOrdersCount * 20; // ปรับ 20 บาท/ออเดอร์
+    const riderCost = calculateRiderCost(roundedDistanceKm, currentBoxes);
 
     routes.push({
-      riderId: riderIndex + 1,
+      riderId,
+      jobCode,
       riderName: name,
       color,
       totalBoxes: currentBoxes,
       maxCapacity: MAX_BOXES_PER_RIDER,
-      orderCount: stops.length - 2,
-      totalDistanceKm: Math.round(totalDistanceKm * 100) / 100,
+      orderCount: currentOrderCount,
+      maxOrders: MAX_ORDERS_PER_RIDER,
+      totalDistanceKm: roundedDistanceKm,
       estimatedMinutes,
       departureTime: '11:30 น.',
       estimatedArrivalTime: arrivalTimeString,
       isWithinOneHour,
-      lateFineCompensation,
+      riderCost,
       stops,
     });
 
@@ -209,4 +220,10 @@ export function optimizeDeliveryRoutes(ordersToDeliver: Order[]): RiderRoute[] {
   }
 
   return routes;
+}
+
+// ฟังก์ชันเรียกคำนวณสรุปผลการเงิน (ส่งต่อไปยัง calculator)
+export function calculateFinancialSummary(routes: RiderRoute[], totalBoxes: number): FinancialSummary {
+  const riderCosts = routes.map((r) => r.riderCost);
+  return calcFinance(riderCosts, totalBoxes);
 }

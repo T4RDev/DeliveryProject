@@ -2,20 +2,44 @@ import { Request, Response, Router } from 'express';
 import { conn } from '../dbconnect';
 import { Order } from '../models/Order';
 import { DEPOT_LOCATION } from '../utils/geo';
-import { optimizeDeliveryRoutes } from '../services/cvrpService';
+import {
+  optimizeDeliveryRoutes,
+  calculateFinancialSummary,
+  RoutingStrategy,
+  RiderRoute,
+  DeliveryStop,
+  FinancialSummary,
+} from '../services/cvrpService';
 
 export const routingRouter = Router();
 
-// Re-export interfaces เพื่อให้ไฟล์อื่นที่เคย import จากที่นี่ใช้งานได้ต่อเนื่อง
-export { DeliveryStop, RiderRoute } from '../services/cvrpService';
+// Re-export interfaces
+export { DeliveryStop, RiderRoute, FinancialSummary } from '../services/cvrpService';
 
-/**
- * POST /api/routing/optimize
- * อัลกอริทึมจัดเส้นทางและแบ่งงานไรเดอร์ (CVRP)
- * ดึงออเดอร์จาก MySQL -> คำนวณเส้นทาง -> บันทึก rider_id ที่ได้รับมอบหมายลงฐานข้อมูล
- */
+// ตัวเลือกกลยุทธ์การจัดเส้นทางสำหรับนำเสนอ
+export const AVAILABLE_STRATEGIES = [
+  {
+    id: 'fastest',
+    name: 'เน้นจัดส่งเร็วที่สุด',
+    description: 'เลือกจุดส่งใกล้สุดทีละจุด เพื่อให้ถึงมือลูกค้าเร็วที่สุด',
+  },
+  {
+    id: 'cost_optimized',
+    name: 'เน้นประหยัดต้นทุนค่าส่ง',
+    description: 'จัดกลุ่มตามจำนวนกล่องเพื่อลดค่าส่ง Box-Km ให้ได้กำไรสูงสุด',
+  },
+  {
+    id: 'balanced',
+    name: 'กระจายงานไรเดอร์เท่ากัน',
+    description: 'เฉลี่ยภาระงานและจำนวนจุดส่งให้ไรเดอร์แต่ละคนใกล้เคียงกัน',
+  },
+];
+
+// จัดเส้นทางและแบ่งงานไรเดอร์ (POST /api/routing/optimize)
 routingRouter.post('/optimize', async (req: Request, res: Response) => {
   try {
+    const strategy = (req.body.strategy as RoutingStrategy) || 'fastest';
+
     const [rows] = await conn.query(`
       SELECT 
         orders.id, orders.customer_id AS customerId, orders.box_count AS boxCount,
@@ -54,24 +78,36 @@ routingRouter.post('/optimize', async (req: Request, res: Response) => {
         success: true,
         message: 'ไม่มีรายการออเดอร์ที่ต้องจัดส่ง',
         depot: DEPOT_LOCATION,
+        strategy,
+        availableStrategies: AVAILABLE_STRATEGIES,
+        financial: {
+          pricePerBox: 65,
+          foodCostPerBox: 40,
+          totalBoxes: 0,
+          totalRevenue: 0,
+          totalFoodCost: 0,
+          totalRiderCost: 0,
+          grossProfit: 0,
+          netProfit: 0,
+          isProfitable: true,
+        },
         summary: {
           totalRiders: 0,
           totalOrders: 0,
           totalBoxes: 0,
           totalDistanceKm: 0,
           maxEstimatedMinutes: 0,
-          totalLateFine: 0,
+          allOnTime: true,
         },
         riders: [],
       });
     }
 
-    // เรียกใช้ฟังก์ชัน CVRP จาก cvrpService.ts
-    const routes = optimizeDeliveryRoutes(targetOrders);
+    // เรียกใช้ฟังก์ชัน CVRP
+    const routes = optimizeDeliveryRoutes(targetOrders, { strategy });
 
     // บันทึกการมอบหมาย rider_id ลงฐานข้อมูล MySQL
     for (const route of routes) {
-      // ป้องกัน Foreign Key Error: ถ้ายังไม่มีไรเดอร์ไอดีนี้ใน DB ให้เพิ่มอัตโนมัติ
       const [existing] = await conn.query('SELECT id FROM riders WHERE id = ?', [route.riderId]);
       if ((existing as any[]).length === 0) {
         await conn.query(
@@ -96,20 +132,22 @@ routingRouter.post('/optimize', async (req: Request, res: Response) => {
 
     const totalBoxes = routes.reduce((sum, r) => sum + r.totalBoxes, 0);
     const totalDistanceKm = Math.round(routes.reduce((sum, r) => sum + r.totalDistanceKm, 0) * 100) / 100;
-    const maxEstimatedMinutes = Math.max(...routes.map((r) => r.estimatedMinutes));
-    const totalLateFine = routes.reduce((sum, r) => sum + r.lateFineCompensation, 0);
+    const maxEstimatedMinutes = routes.length > 0 ? Math.max(...routes.map((r) => r.estimatedMinutes)) : 0;
+    const financial = calculateFinancialSummary(routes, totalBoxes);
 
     res.json({
       success: true,
-      message: `จัดเส้นทางสำเร็จสำหรับไรเดอร์ ${routes.length} คัน (รวม ${totalBoxes} กล่อง)`,
+      message: `จัดเส้นทางสำเร็จสำหรับไรเดอร์ ${routes.length} คัน (จำกัดไม่เกินคันละ 3 ออเดอร์, ข้าวกล่องรวม ${totalBoxes} กล่อง)`,
       depot: DEPOT_LOCATION,
+      strategy,
+      availableStrategies: AVAILABLE_STRATEGIES,
+      financial,
       summary: {
         totalRiders: routes.length,
         totalOrders: targetOrders.length,
         totalBoxes,
         totalDistanceKm,
         maxEstimatedMinutes,
-        totalLateFine,
         allOnTime: maxEstimatedMinutes <= 60,
       },
       riders: routes,
@@ -119,9 +157,9 @@ routingRouter.post('/optimize', async (req: Request, res: Response) => {
   }
 });
 
-// GET /api/routing/optimize (รองรับ GET ด้วยเพื่อความสะดวกในการทดสอบ)
+// GET /api/routing/optimize
 routingRouter.get('/optimize', (req: Request, res: Response) => {
-  req.body = {};
+  req.body = { strategy: req.query.strategy || 'fastest' };
   (routingRouter as any).handle(
     { ...req, method: 'POST', url: '/optimize' },
     res

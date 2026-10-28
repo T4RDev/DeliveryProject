@@ -228,10 +228,18 @@ orderRouter.get('/:id', async (req: Request, res: Response) => {
 orderRouter.post('/', async (req: Request, res: Response) => {
   try {
     const { customerId, riderId, boxCount, note } = req.body;
-    if (!customerId || !boxCount) {
+    if (!customerId || boxCount === undefined) {
       return res.status(400).json({
         success: false,
         message: 'กรุณาระบุ customerId และ boxCount',
+      });
+    }
+
+    const parsedBoxes = parseInt(boxCount);
+    if (isNaN(parsedBoxes) || parsedBoxes < 1 || parsedBoxes > 3) {
+      return res.status(400).json({
+        success: false,
+        message: 'ตามเงื่อนไขของร้าน แต่ละรายการสั่งอาหารได้ไม่เกิน 3 กล่อง (1 - 3 กล่องเท่านั้น)',
       });
     }
 
@@ -239,7 +247,7 @@ orderRouter.post('/', async (req: Request, res: Response) => {
     const [result] = await conn.query(`
       INSERT INTO orders (customer_id, rider_id, box_count, status, note)
       VALUES (?, ?, ?, 'pending', ?)
-    `, [parseInt(customerId), assignedRider, parseInt(boxCount), note || '']);
+    `, [parseInt(customerId), assignedRider, parsedBoxes, note || '']);
 
     const insertResult = result as any;
     const newId = insertResult.insertId;
@@ -276,6 +284,16 @@ orderRouter.put('/:id', async (req: Request, res: Response) => {
   try {
     const id = req.params.id;
     const { boxCount, status, note, riderId } = req.body;
+
+    if (boxCount != null) {
+      const parsedBoxes = parseInt(boxCount);
+      if (isNaN(parsedBoxes) || parsedBoxes < 1 || parsedBoxes > 3) {
+        return res.status(400).json({
+          success: false,
+          message: 'ตามเงื่อนไขของร้าน แต่ละรายการสั่งอาหารได้ไม่เกิน 3 กล่อง (1 - 3 กล่องเท่านั้น)',
+        });
+      }
+    }
 
     const [result] = await conn.query(`
       UPDATE orders
