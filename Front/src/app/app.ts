@@ -3,8 +3,26 @@ import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { ApiService } from './services/api.service';
 import { MapService } from './services/map.service';
-import { Customer, Order, Rider, MsuLandmark, RoutingOptimizationResult, RiderRoute, DeliveryStop } from './models/delivery.model';
-import { DEFAULT_MSU_LANDMARKS, DEFAULT_DEPOT, buildGoogleMapsSearchUrl, buildStopNavigationUrl } from './utils/constants';
+import {
+  Customer,
+  Order,
+  Rider,
+  MsuLandmark,
+  RoutingOptimizationResult,
+  RiderRoute,
+  DeliveryStop,
+} from './models/delivery.model';
+import {
+  DEFAULT_MSU_LANDMARKS,
+  DEFAULT_DEPOT,
+  buildGoogleMapsSearchUrl,
+  buildStopNavigationUrl,
+} from './utils/constants';
+import {
+  calculateRiderProgress,
+  formatRiderRouteSummary,
+  calculateOrderSummary,
+} from './utils/delivery-calculator';
 
 @Component({
   selector: 'app-root',
@@ -17,34 +35,42 @@ export class App implements OnInit, AfterViewInit {
   private api = inject(ApiService);
   private mapService = inject(MapService);
 
-  // แท็บหน้าจอ: 'owner' = หน้าจอเจ้าของร้าน, 'rider' = หน้าจอไรเดอร์บนมือถือ
   activeTab = signal<'owner' | 'rider'>('owner');
+  ownerSubTab = signal<'routes' | 'customers' | 'orders'>('routes');
 
   backendConnected = signal<boolean>(false);
   isLoading = signal<boolean>(false);
   alertMessage = signal<{ type: 'success' | 'error' | 'info'; text: string } | null>(null);
 
-  // ข้อมูลออเดอร์
+  customers = signal<Customer[]>([]);
+  customerSearchText = '';
+  selectedCustomerId = signal<number | null>(null);
+  customerForm = {
+    id: null as number | null,
+    firstName: '',
+    lastName: '',
+    phone: '',
+    address: 'มหาวิทยาลัยมหาสารคาม ขามเรียง',
+    lat: 16.2445,
+    lng: 103.2500,
+  };
+  isEditingCustomer = signal<boolean>(false);
+
   orders = signal<Order[]>([]);
   totalOrderCount = signal<number>(0);
   totalBoxes = signal<number>(0);
   pendingCount = signal<number>(0);
   deliveredCount = signal<number>(0);
 
-  // ข้อมูลไรเดอร์จากฐานข้อมูล MySQL
   riders = signal<Rider[]>([]);
-
-  // ข้อมูลแลนด์มาร์ก มมส.
   msuLandmarks = signal<MsuLandmark[]>(DEFAULT_MSU_LANDMARKS);
   selectedLandmarkName = signal<string>('คณะเทคโนโลยีสารสนเทศ (IT MSU)');
 
-  // ค้นหาและตัวกรอง
   customerSearchQuery = '';
   searchPhoneQuery = '';
   phoneLookupResult = signal<string | null>(null);
   statusFilter = signal<'all' | 'pending' | 'delivered'>('all');
 
-  // ฟอร์มเพิ่มออเดอร์ใหม่
   newOrderForm = {
     firstName: '',
     lastName: '',
@@ -57,21 +83,20 @@ export class App implements OnInit, AfterViewInit {
     riderId: null as number | null,
   };
 
-  // ผลการจัดเส้นทาง (Optimization Result)
   routingResult = signal<RoutingOptimizationResult | null>(null);
   isOptimizing = signal<boolean>(false);
-  selectedRiderId = signal<number | null>(null); // ไรเดอร์ที่เลือกโฟกัสเส้นทาง
+  selectedRiderId = signal<number | null>(null);
+  selectedStrategy = signal<string>('fastest');
 
-  // สถานะการส่งสำเร็จในหน้าจอไรเดอร์ (เก็บใน localStorage)
   completedStops = signal<{ [key: string]: boolean }>({});
-
-  // ไรเดอร์ที่เลือกในหน้าจอมือถือ (Rider View)
   activeRiderIndex = signal<number>(0);
   loggedInRider = signal<Rider | null>(null);
   selectedLoginRiderId: number | null = 1;
+  jobCodeInput = '';
 
   ngOnInit() {
     this.checkBackendAndLoadData();
+    this.loadCustomers();
     this.loadRiders();
     this.loadMsuLandmarks();
     this.restoreCompletedStops();
@@ -86,17 +111,36 @@ export class App implements OnInit, AfterViewInit {
     }, 200);
   }
 
-  // สลับแท็บระหว่าง เจ้าของร้าน กับ ไรเดอร์
+  // สลับแท็บระหว่างหน้าเจ้าของร้านและหน้าไรเดอร์
   switchTab(tab: 'owner' | 'rider') {
     this.activeTab.set(tab);
     if (tab === 'owner') {
       setTimeout(() => {
         this.mapService.invalidateSize();
-        if (this.routingResult()) {
+        if (this.ownerSubTab() === 'routes' && this.routingResult()) {
           this.mapService.renderRoutesOnMap(this.routingResult()!);
+        } else if (this.ownerSubTab() === 'customers') {
+          this.mapService.renderCustomerLocations(this.customers(), this.selectedCustomerId());
         }
       }, 100);
     }
+  }
+
+  // สลับเมนูย่อยของหน้าเจ้าของร้าน
+  switchOwnerSubTab(subTab: 'routes' | 'customers' | 'orders') {
+    this.ownerSubTab.set(subTab);
+    setTimeout(() => {
+      this.mapService.invalidateSize();
+      if (subTab === 'routes') {
+        if (this.routingResult()) {
+          this.mapService.renderRoutesOnMap(this.routingResult()!, this.selectedRiderId());
+        } else {
+          this.mapService.clearMapRoutes();
+        }
+      } else if (subTab === 'customers') {
+        this.mapService.renderCustomerLocations(this.customers(), this.selectedCustomerId());
+      }
+    }, 100);
   }
 
   showAlert(type: 'success' | 'error' | 'info', text: string) {
@@ -108,6 +152,7 @@ export class App implements OnInit, AfterViewInit {
     }, 4000);
   }
 
+  // ตรวจสอบการเชื่อมต่อเซิร์ฟเวอร์และดึงข้อมูลออเดอร์เริ่มต้น
   checkBackendAndLoadData() {
     this.isLoading.set(true);
     this.api.getOrders().subscribe({
@@ -116,11 +161,12 @@ export class App implements OnInit, AfterViewInit {
         this.updateOrderList(res.data, res.totalBoxes);
         this.isLoading.set(false);
 
-        // ดึงผลจัดเส้นทางล่วงหน้าเงียบๆ เพื่อให้ไรเดอร์เปิดดูใบงานได้ทันที
-        this.api.optimizeRoutes().subscribe({
+        this.api.optimizeRoutes(this.selectedStrategy()).subscribe({
           next: (routeRes) => {
             this.routingResult.set(routeRes);
-            this.mapService.renderRoutesOnMap(routeRes);
+            if (this.ownerSubTab() === 'routes') {
+              this.mapService.renderRoutesOnMap(routeRes);
+            }
           },
           error: (err) => console.warn('Auto route load error:', err),
         });
@@ -133,6 +179,172 @@ export class App implements OnInit, AfterViewInit {
     });
   }
 
+  // ดึงข้อมูลลูกค้าทั้งหมด
+  loadCustomers() {
+    this.api.getCustomers().subscribe({
+      next: (res) => {
+        if (res.success && res.data) {
+          this.customers.set(res.data);
+          if (this.ownerSubTab() === 'customers') {
+            this.mapService.renderCustomerLocations(res.data, this.selectedCustomerId());
+          }
+        }
+      },
+      error: (err) => console.error('Failed to load customers', err),
+    });
+  }
+
+  get filteredCustomers(): Customer[] {
+    const q = this.customerSearchText.trim().toLowerCase();
+    if (!q) return this.customers();
+    return this.customers().filter((c) => {
+      const full = `${c.firstName} ${c.lastName}`.toLowerCase();
+      const phone = c.phone?.toLowerCase() || '';
+      const address = c.address?.toLowerCase() || '';
+      return full.includes(q) || phone.includes(q) || address.includes(q);
+    });
+  }
+
+  // ปักหมุดตำแหน่งบ้านลูกค้าบนแผนที่
+  selectCustomerOnMap(cust: Customer) {
+    this.selectedCustomerId.set(cust.id);
+    this.mapService.renderCustomerLocations(this.customers(), cust.id);
+    this.showAlert('info', `แสดงตำแหน่งบ้าน: ${cust.firstName} ${cust.lastName} บนแผนที่`);
+  }
+
+  editCustomer(cust: Customer) {
+    this.isEditingCustomer.set(true);
+    this.customerForm = {
+      id: cust.id,
+      firstName: cust.firstName,
+      lastName: cust.lastName,
+      phone: cust.phone,
+      address: cust.address,
+      lat: cust.lat || DEFAULT_DEPOT.lat,
+      lng: cust.lng || DEFAULT_DEPOT.lng,
+    };
+    this.selectCustomerOnMap(cust);
+  }
+
+  cancelEditCustomer() {
+    this.isEditingCustomer.set(false);
+    this.customerForm = {
+      id: null,
+      firstName: '',
+      lastName: '',
+      phone: '',
+      address: 'มหาวิทยาลัยมหาสารคาม ขามเรียง',
+      lat: 16.2445,
+      lng: 103.2500,
+    };
+    this.selectedCustomerId.set(null);
+  }
+
+  // บันทึกข้อมูลลูกค้า (สร้างใหม่หรืออัปเดต)
+  saveCustomer() {
+    if (!this.customerForm.firstName.trim() || !this.customerForm.phone.trim()) {
+      this.showAlert('error', 'กรุณากรอกชื่อและเบอร์โทรศัพท์ลูกค้า');
+      return;
+    }
+
+    this.isLoading.set(true);
+    const payload: Partial<Customer> = {
+      firstName: this.customerForm.firstName.trim(),
+      lastName: this.customerForm.lastName.trim(),
+      phone: this.customerForm.phone.trim(),
+      address: this.customerForm.address.trim(),
+      lat: Number(this.customerForm.lat),
+      lng: Number(this.customerForm.lng),
+    };
+
+    if (this.isEditingCustomer() && this.customerForm.id) {
+      this.api.updateCustomer(this.customerForm.id, payload).subscribe({
+        next: () => {
+          this.isLoading.set(false);
+          this.showAlert('success', `อัปเดตข้อมูลลูกค้า #${this.customerForm.id} เรียบร้อยแล้ว`);
+          this.loadCustomers();
+          this.cancelEditCustomer();
+        },
+        error: () => {
+          this.isLoading.set(false);
+          this.showAlert('error', 'อัปเดตข้อมูลลูกค้าไม่สำเร็จ');
+        },
+      });
+    } else {
+      this.api.createCustomer(payload).subscribe({
+        next: () => {
+          this.isLoading.set(false);
+          this.showAlert('success', 'เพิ่มลูกค้าใหม่เรียบร้อยแล้ว');
+          this.loadCustomers();
+          this.cancelEditCustomer();
+        },
+        error: () => {
+          this.isLoading.set(false);
+          this.showAlert('error', 'เพิ่มลูกค้าใหม่ไม่สำเร็จ');
+        },
+      });
+    }
+  }
+
+  // ลบข้อมูลลูกค้า
+  deleteCustomer(id: number) {
+    if (!confirm(`คุณต้องการลบข้อมูลลูกค้า #${id} ใช่หรือไม่?`)) return;
+    this.api.deleteCustomer(id).subscribe({
+      next: () => {
+        this.showAlert('success', `ลบข้อมูลลูกค้า #${id} เรียบร้อยแล้ว`);
+        this.loadCustomers();
+      },
+      error: () => this.showAlert('error', 'ลบข้อมูลลูกค้าไม่สำเร็จ (อาจมีออเดอร์ผูกอยู่)'),
+    });
+  }
+
+  // เรียกใช้ API คำนวณจัดเส้นทาง CVRP
+  optimizeDeliveryRoutes(strategy?: string) {
+    if (strategy) {
+      this.selectedStrategy.set(strategy);
+    }
+    const currentStrat = this.selectedStrategy();
+
+    this.isOptimizing.set(true);
+    this.api.optimizeRoutes(currentStrat).subscribe({
+      next: (res) => {
+        this.isOptimizing.set(false);
+        this.routingResult.set(res);
+        this.selectedRiderId.set(null);
+
+        if (this.ownerSubTab() === 'routes') {
+          this.mapService.renderRoutesOnMap(res);
+        }
+
+        const profitStatus = res.financial.isProfitable
+          ? `กำไรสุทธิ +${res.financial.netProfit} บาท`
+          : `ขาดทุน ${res.financial.netProfit} บาท`;
+
+        this.showAlert(
+          res.financial.isProfitable ? 'success' : 'error',
+          `จัดเส้นทางสำเร็จ (${res.summary.totalRiders} คัน, คันละไม่เกิน 3 ออเดอร์) • ${profitStatus}`
+        );
+      },
+      error: () => {
+        this.isOptimizing.set(false);
+        this.showAlert('error', 'เกิดข้อผิดพลาดในการจัดเส้นทาง');
+      },
+    });
+  }
+
+  changeStrategy(strat: string) {
+    this.selectedStrategy.set(strat);
+    this.optimizeDeliveryRoutes(strat);
+  }
+
+  selectRiderFilter(riderId: number | null) {
+    this.selectedRiderId.set(riderId);
+    const result = this.routingResult();
+    if (result && this.ownerSubTab() === 'routes') {
+      this.mapService.renderRoutesOnMap(result, riderId);
+    }
+  }
+
   loadMsuLandmarks() {
     this.api.getMsuLandmarks().subscribe({
       next: (res) => {
@@ -140,9 +352,18 @@ export class App implements OnInit, AfterViewInit {
           this.msuLandmarks.set(res.data);
         }
       },
-      error: () => {
-        this.msuLandmarks.set(DEFAULT_MSU_LANDMARKS);
+      error: () => this.msuLandmarks.set(DEFAULT_MSU_LANDMARKS),
+    });
+  }
+
+  loadRiders() {
+    this.api.getRiders().subscribe({
+      next: (res) => {
+        if (res.success && res.data) {
+          this.riders.set(res.data);
+        }
       },
+      error: (err) => console.error('Failed to load riders', err),
     });
   }
 
@@ -160,13 +381,14 @@ export class App implements OnInit, AfterViewInit {
     });
   }
 
+  // อัปเดตรายการออเดอร์และคำนวณตัวเลขสรุป
   private updateOrderList(orders: Order[], totalBoxes?: number) {
     this.orders.set(orders);
-    this.totalOrderCount.set(orders.length);
-    const boxes = totalBoxes ?? orders.reduce((sum, o) => sum + o.boxCount, 0);
-    this.totalBoxes.set(boxes);
-    this.pendingCount.set(orders.filter((o) => o.status !== 'delivered').length);
-    this.deliveredCount.set(orders.filter((o) => o.status === 'delivered').length);
+    const summary = calculateOrderSummary(orders);
+    this.totalOrderCount.set(summary.totalCount);
+    this.totalBoxes.set(totalBoxes ?? summary.totalBoxes);
+    this.pendingCount.set(summary.pendingCount);
+    this.deliveredCount.set(summary.deliveredCount);
   }
 
   setFilterStatus(status: 'all' | 'pending' | 'delivered') {
@@ -212,6 +434,7 @@ export class App implements OnInit, AfterViewInit {
     this.onSelectLandmark(picked.name);
   }
 
+  // ค้นหาข้อมูลลูกค้าเดิมจากเบอร์โทรศัพท์
   lookupCustomerByPhone() {
     const phone = this.searchPhoneQuery.trim();
     if (!phone) {
@@ -237,7 +460,7 @@ export class App implements OnInit, AfterViewInit {
         }
       },
       error: () => {
-        this.phoneLookupResult.set('ไม่พบข้อมูลลูกค้าเดิม');
+        this.phoneLookupResult.set('ไม่พบข้อมูลลูกค้าเดิม (สามารถกรอกเป็นลูกค้าใหม่ได้)');
         this.newOrderForm.phone = phone;
       },
     });
@@ -253,6 +476,7 @@ export class App implements OnInit, AfterViewInit {
     }
   }
 
+  // บันทึกออเดอร์ใหม่ลงฐานข้อมูล
   submitNewOrder() {
     if (!this.newOrderForm.firstName.trim() || !this.newOrderForm.phone.trim()) {
       this.showAlert('error', 'กรุณากรอกชื่อและเบอร์โทรศัพท์');
@@ -284,7 +508,9 @@ export class App implements OnInit, AfterViewInit {
               this.isLoading.set(false);
               this.showAlert('success', `บันทึกออเดอร์ #${oRes.data.id} สำเร็จ`);
               this.loadOrders();
+              this.loadCustomers();
               this.resetNewOrderForm();
+              this.optimizeDeliveryRoutes();
             },
             error: () => {
               this.isLoading.set(false);
@@ -296,17 +522,6 @@ export class App implements OnInit, AfterViewInit {
         this.isLoading.set(false);
         this.showAlert('error', 'สร้างข้อมูลลูกค้าไม่สำเร็จ');
       },
-    });
-  }
-
-  loadRiders() {
-    this.api.getRiders().subscribe({
-      next: (res) => {
-        if (res.success && res.data) {
-          this.riders.set(res.data);
-        }
-      },
-      error: (err) => console.error('Failed to load riders', err),
     });
   }
 
@@ -332,20 +547,23 @@ export class App implements OnInit, AfterViewInit {
     this.phoneLookupResult.set(null);
   }
 
+  // ปรับจำนวนข้าวกล่อง (จำกัด 1 - 3 กล่องต่อออเดอร์)
   changeBoxCount(order: Order, delta: number) {
     const nextVal = order.boxCount + delta;
-    if (nextVal < 1) return;
+    if (nextVal < 1 || nextVal > 3) return;
 
     this.api.updateOrder(order.id, { boxCount: nextVal }).subscribe({
       next: () => {
         order.boxCount = nextVal;
         const total = this.orders().reduce((sum, o) => sum + o.boxCount, 0);
         this.totalBoxes.set(total);
+        this.optimizeDeliveryRoutes();
       },
       error: () => this.showAlert('error', 'อัปเดตจำนวนกล่องไม่สำเร็จ'),
     });
   }
 
+  // สลับสถานะจัดส่ง (รอส่ง / ส่งแล้ว)
   toggleOrderStatus(order: Order) {
     const nextStatus = order.status === 'delivered' ? 'pending' : 'delivered';
     this.api.updateOrder(order.id, { status: nextStatus }).subscribe({
@@ -364,6 +582,7 @@ export class App implements OnInit, AfterViewInit {
     });
   }
 
+  // ลบออเดอร์
   deleteOrder(orderId: number) {
     if (!confirm(`คุณต้องการลบออเดอร์ #${orderId} ใช่หรือไม่?`)) return;
 
@@ -371,6 +590,7 @@ export class App implements OnInit, AfterViewInit {
       next: () => {
         this.showAlert('success', `ลบออเดอร์ #${orderId} เรียบร้อย`);
         this.loadOrders();
+        this.optimizeDeliveryRoutes();
       },
       error: () => this.showAlert('error', 'ลบออเดอร์ไม่สำเร็จ'),
     });
@@ -385,7 +605,7 @@ export class App implements OnInit, AfterViewInit {
         this.isLoading.set(false);
         this.showAlert('info', 'ล้างข้อมูลออเดอร์ทั้งหมดแล้ว');
         this.updateOrderList([], 0);
-        this.clearMapRoutes();
+        this.mapService.clearMapRoutes();
         this.routingResult.set(null);
       },
       error: () => {
@@ -395,16 +615,13 @@ export class App implements OnInit, AfterViewInit {
     });
   }
 
-  clearMapRoutes() {
-    this.mapService.clearMapRoutes(DEFAULT_DEPOT.lat, DEFAULT_DEPOT.lng);
-  }
-
+  // จำลองออเดอร์สุ่ม 20 - 30 รายการ (ตามโจทย์)
   mockOrders(count: number = 24) {
     this.isLoading.set(true);
     this.api.mockOrders(count).subscribe({
       next: (res) => {
         this.isLoading.set(false);
-        this.showAlert('success', `สุ่มจำลองออเดอร์ ${count} รายการ สำเร็จแล้ว!`);
+        this.showAlert('success', `จำลองออเดอร์ ${count} รายการ สำเร็จแล้ว`);
         this.updateOrderList(res.data, res.totalBoxes);
         this.optimizeDeliveryRoutes();
       },
@@ -423,39 +640,33 @@ export class App implements OnInit, AfterViewInit {
     return buildStopNavigationUrl(stop);
   }
 
-  // เรียก API จัดเส้นทางและแบ่งงานไรเดอร์ (Project.md)
-  optimizeDeliveryRoutes() {
-    this.isOptimizing.set(true);
-    this.api.optimizeRoutes().subscribe({
-      next: (res) => {
-        this.isOptimizing.set(false);
-        this.routingResult.set(res);
-        this.selectedRiderId.set(null); // แสดงทุกคัน
-
-        // วาดเส้นทางบนแผนที่ผ่าน MapService
-        this.mapService.renderRoutesOnMap(res);
-
-        this.showAlert(
-          'success',
-          `จัดเส้นทางสำเร็จ! แบ่งงานให้ไรเดอร์ ${res.summary.totalRiders} คัน (คันละไม่เกิน 10 กล่อง)`
-        );
-      },
-      error: () => {
-        this.isOptimizing.set(false);
-        this.showAlert('error', 'เกิดข้อผิดพลาดในการจัดเส้นทาง');
-      },
-    });
-  }
-
-  // กดเลือกดูเฉพาะเส้นทางของไรเดอร์คนใดคนหนึ่ง
-  selectRiderFilter(riderId: number | null) {
-    this.selectedRiderId.set(riderId);
-    const result = this.routingResult();
-    if (result) {
-      this.mapService.renderRoutesOnMap(result, riderId);
+  // ค้นหาใบงานไรเดอร์จากรหัสเลขใบงาน
+  loginRiderByJobCode(rawCode?: string) {
+    const code = (rawCode ?? this.jobCodeInput).trim().toUpperCase();
+    if (!code) {
+      this.showAlert('error', 'กรุณากรอกเลขใบงาน (เช่น 1 หรือ JOB-1)');
+      return;
     }
+
+    let parsedRiderId = parseInt(code.replace(/[^0-9]/g, ''), 10);
+    if (isNaN(parsedRiderId)) {
+      const matchedByName = this.riders().find(
+        (r) => r.name.toLowerCase().includes(code.toLowerCase()) || r.phone.includes(code)
+      );
+      if (matchedByName) {
+        parsedRiderId = matchedByName.id;
+      }
+    }
+
+    if (!parsedRiderId) {
+      this.showAlert('error', `ไม่พบใบงานสำหรับรหัส "${code}"`);
+      return;
+    }
+
+    this.loginRider(parsedRiderId);
   }
 
+  // เข้าสู่ระบบดูใบงานของไรเดอร์
   loginRider(riderId: number | null) {
     if (!riderId) {
       this.showAlert('error', 'กรุณาเลือกชื่อไรเดอร์เพื่อเข้าสู่ระบบ');
@@ -472,13 +683,9 @@ export class App implements OnInit, AfterViewInit {
 
       const ridersList = this.routingResult()?.riders || [];
       const matchIdx = ridersList.findIndex((r) => r.riderId === rId);
-      if (matchIdx >= 0) {
-        this.activeRiderIndex.set(matchIdx);
-      } else {
-        this.activeRiderIndex.set(0);
-      }
+      this.activeRiderIndex.set(matchIdx >= 0 ? matchIdx : 0);
 
-      this.showAlert('success', `เข้าสู่ระบบสำเร็จ: ${rider.name}`);
+      this.showAlert('success', `เข้าสู่ระบบดูใบงานสำเร็จ: ${rider.name}`);
     } else {
       this.showAlert('error', 'ไม่พบข้อมูลไรเดอร์นี้ในระบบ');
     }
@@ -486,24 +693,19 @@ export class App implements OnInit, AfterViewInit {
 
   logoutRider() {
     this.loggedInRider.set(null);
+    this.jobCodeInput = '';
     this.showAlert('info', 'ออกจากระบบเรียบร้อยแล้ว');
   }
 
-  // สร้างข้อความสรุปเส้นทางตามโจทย์: 'จุดที่ 1 ต้องไปส่งบ้านคุณ A -> จุดที่ 2 ไปส่งบ้านคุณ B -> เสร็จแล้วให้ขับกลับร้าน'
+  // สรุปข้อความลำดับการจัดส่ง
   getRiderRouteSummaryText(rider: RiderRoute): string {
-    const customerStops = rider.stops.filter((s) => s.type === 'customer');
-    if (customerStops.length === 0) return 'ไม่มีรายการจัดส่ง';
-    const textSeq = customerStops
-      .map((s, idx) => `จุดที่ ${idx + 1} ต้องไปส่งบ้านคุณ ${s.name}`)
-      .join(' -> ');
-    return `${textSeq} -> เสร็จแล้วให้ขับกลับร้าน`;
+    return formatRiderRouteSummary(rider);
   }
 
   get currentRider(): RiderRoute | null {
     const res = this.routingResult();
     if (!res || res.riders.length === 0) return null;
 
-    // ถ้าล็อกอินอยู่ ให้ดึงเฉพาะใบงานของไรเดอร์ที่ล็อกอิน
     const loggedIn = this.loggedInRider();
     if (loggedIn) {
       const found = res.riders.find((r) => r.riderId === loggedIn.id);
@@ -534,6 +736,7 @@ export class App implements OnInit, AfterViewInit {
     return !!this.completedStops()[key];
   }
 
+  // บันทึกสถานะส่งสำเร็จทีละจุด
   toggleStopCompleted(riderId: number, step: number, orderId?: number) {
     const key = this.getStopKey(riderId, step);
     const current = { ...this.completedStops() };
@@ -549,7 +752,7 @@ export class App implements OnInit, AfterViewInit {
           this.loadOrders();
           this.showAlert(
             'success',
-            nextVal ? `ออเดอร์ #${orderId} อัปเดตสถานะ: ส่งสำเร็จแล้ว!` : `ยกเลิกสถานะออเดอร์ #${orderId}`
+            nextVal ? `ออเดอร์ #${orderId} ส่งมอบสำเร็จเรียบร้อย` : `ยกเลิกสถานะออเดอร์ #${orderId}`
           );
         },
         error: (err) => console.error('Failed to update order status in DB', err),
@@ -576,18 +779,8 @@ export class App implements OnInit, AfterViewInit {
     }
   }
 
+  // คำนวณความคืบหน้าการส่ง
   getRiderProgress(rider: RiderRoute): { completed: number; total: number; percent: number } {
-    const customerStops = rider.stops.filter((s) => s.type === 'customer');
-    const total = customerStops.length;
-    let completed = 0;
-
-    customerStops.forEach((s) => {
-      if (this.isStopCompleted(rider.riderId, s.step)) {
-        completed++;
-      }
-    });
-
-    const percent = total > 0 ? Math.round((completed / total) * 100) : 0;
-    return { completed, total, percent };
+    return calculateRiderProgress(rider, this.completedStops());
   }
 }
